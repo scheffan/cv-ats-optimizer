@@ -1,0 +1,21 @@
+name = "cv-ats-optimizer"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# Sin logs persistentes: el contenido de los CV nunca se registra.
+[observability]
+enabled = false
+
+[vars]
+ORIGENES_PERMITIDOS = "https://scheffan.github.io,http://localhost:5173"
+
+# 5 pedidos por minuto por IP.
+[[ratelimits]]
+name = "LIMITADOR"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+# La clave va como secreto, nunca en el repo:
+#   npx wrangler secret put GROQ_API_KEY
