@@ -27,6 +27,22 @@ jobs:
       - name: Avisar si faltan los secretos
         if: env.TIENE_CLAVES != 'true'
         run: echo "::warning::Faltan los secretos CLOUDFLARE_API_TOKEN y GROQ_API_KEY. La web se publica igual, pero la IA online no va a responder."
+      - name: Registrar el subdominio workers.dev (solo la primera vez)
+        if: env.TIENE_CLAVES == 'true'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          API=https://api.cloudflare.com/client/v4
+          AUTH="Authorization: Bearer $CF_TOKEN"
+          CUENTA=$(curl -s -H "$AUTH" "$API/accounts" | jq -r '.result[0].id')
+          ACTUAL=$(curl -s -H "$AUTH" "$API/accounts/$CUENTA/workers/subdomain" | jq -r '.result.subdomain // empty')
+          if [ -n "$ACTUAL" ]; then echo "Subdominio ya registrado: $ACTUAL"; exit 0; fi
+          for NOMBRE in scheffan scheffan-cv scheffan-cv-ats; do
+            OK=$(curl -s -X PUT -H "$AUTH" -H "Content-Type: application/json" \
+              -d "{\"subdomain\":\"$NOMBRE\"}" "$API/accounts/$CUENTA/workers/subdomain" | jq -r '.success')
+            if [ "$OK" = "true" ]; then echo "Subdominio registrado: $NOMBRE"; exit 0; fi
+          done
+          echo "::error::No se pudo registrar un subdominio workers.dev"; exit 1
       - name: Publicar el Worker
         id: deploy
         if: env.TIENE_CLAVES == 'true'

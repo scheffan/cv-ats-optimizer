@@ -1,5 +1,6 @@
 name = "cv-ats-optimizer"
 main = "src/index.js"
+workers_dev = true
 compatibility_date = "2026-10-01"
 
 # Sin logs persistentes: el contenido de los CV nunca se registra.
