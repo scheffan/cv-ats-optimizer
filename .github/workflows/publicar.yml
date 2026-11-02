@@ -1,0 +1,66 @@
+name: Publicar
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    name: Worker (Cloudflare)
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    env:
+      TIENE_CLAVES: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.GROQ_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Avisar si faltan los secretos
+        if: env.TIENE_CLAVES != 'true'
+        run: echo "::warning::Faltan los secretos CLOUDFLARE_API_TOKEN y GROQ_API_KEY. La web se publica igual, pero la IA online no va a responder."
+      - name: Publicar el Worker
+        id: deploy
+        if: env.TIENE_CLAVES == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          wranglerVersion: '4.156.2'
+          workingDirectory: worker
+          secrets: GROQ_API_KEY
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
+  web:
+    name: Web (GitHub Pages)
+    needs: worker
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run vendor
+      - name: Conectar la web con el Worker
+        if: needs.worker.outputs.url != ''
+        run: sed -i "s#https://cv-ats-optimizer.scheffan.workers.dev#${{ needs.worker.outputs.url }}#" web/js/config.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,7 +1,7 @@
 # CV ATS Optimizer
 
 [![Tests](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/tests.yml/badge.svg)](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/tests.yml)
-[![Publicar web](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/pages.yml/badge.svg)](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/pages.yml)
+[![Publicar](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/publicar.yml/badge.svg)](https://github.com/scheffan/cv-ats-optimizer/actions/workflows/publicar.yml)
 ![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)
 
 Web gratuita para adaptar tu CV a una oferta laboral puntual. Subís tu CV, pegás la publicación y en unos segundos tenés una versión de una columna, en LaTeX y PDF, pensada para pasar los filtros ATS.
@@ -75,8 +75,13 @@ Reiniciá Ollama y elegí "Local" en la web.
 
 ## Publicarlo
 
-1. **Worker:** `cd worker && npx wrangler login && npx wrangler secret put GROQ_API_KEY && npx wrangler deploy`. Copiá la URL que te da y ponela en `web/js/config.js`.
-2. **Web:** en GitHub, Settings > Pages > Source: GitHub Actions. Cada push a `main` la publica.
+Todo se publica solo con el workflow `Publicar` en cada push a `main`: primero el Worker en Cloudflare y después la web en GitHub Pages, ya conectada al Worker.
+
+Una sola vez hay que:
+
+1. En **Settings > Pages**, elegir *GitHub Actions* como fuente.
+2. Crear una clave gratis en [Groq](https://console.groq.com/keys) y un token de [Cloudflare](https://dash.cloudflare.com/profile/api-tokens) con la plantilla *Edit Cloudflare Workers*.
+3. Cargarlos en **Settings > Secrets and variables > Actions** como `GROQ_API_KEY` y `CLOUDFLARE_API_TOKEN`.
 
 ## Licencia
 

@@ -1,5 +1,5 @@
 // En local usa el Worker de `wrangler dev`; publicado, el de Cloudflare.
-// Después del primer deploy, reemplazá la URL por la que te da wrangler.
+// La URL de producción la completa el workflow "Publicar" con la que devuelve Cloudflare.
 const enLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 
 export const API_URL = enLocal
