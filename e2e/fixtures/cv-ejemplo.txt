@@ -1,0 +1,10 @@
+Juan Gómez
+juan.gomez@mail.com | +54 11 5555-5555 | Buenos Aires
+Perfil: Soy analista QA con 3 años probando aplicaciones web. Me gusta automatizar lo repetitivo.
+Experiencia
+Analista QA - Tienda Nube - 2022 a 2025
+- Automaticé 120 casos de regresión con Playwright y bajé el tiempo de pruebas un 40%.
+- Armé reportes de bugs en Jira junto al equipo de desarrollo.
+Educación
+Tecnicatura en Programación - UTN - 2019 a 2021
+Habilidades: Playwright, JavaScript, SQL, Postman, Jira
