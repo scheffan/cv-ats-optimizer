@@ -1,0 +1,58 @@
+:root {
+  --fondo: #f4f5f7; --panel: #ffffff; --texto: #1d2330; --suave: #5b6475; --borde: #d9dde4;
+  --acento: #1f5fbf; --acento-texto: #ffffff; --ok: #e6f2ea; --ok-texto: #1e6b3a;
+  --falta: #fdf0e1; --falta-texto: #8a4b08; --aviso: #fdecec; --aviso-texto: #9b1c1c; --hoja: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #14171d; --panel: #1c2029; --texto: #e7e9ee; --suave: #a1a9b8; --borde: #2f3542;
+    --acento: #5b9bf0; --acento-texto: #0d1420; --ok: #183323; --ok-texto: #8fd8a8;
+    --falta: #3a2a14; --falta-texto: #f3c27e; --aviso: #3b1a1a; --aviso-texto: #f4a5a5;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fondo); color: var(--texto); }
+.barra { padding: 20px 24px 8px; }
+.barra h1 { margin: 0; font-size: 1.5rem; }
+.barra p { margin: 4px 0 0; color: var(--suave); }
+.grilla { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr) minmax(220px, 0.8fr); gap: 16px; padding: 16px 24px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 16px; }
+h2 { font-size: 1rem; margin: 4px 0 10px; }
+.entrada h2:not(:first-child) { margin-top: 18px; }
+textarea { width: 100%; font: inherit; font-size: 0.9rem; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); resize: vertical; }
+.zona-archivo { display: block; border: 2px dashed var(--borde); border-radius: 10px; padding: 22px 12px; text-align: center; color: var(--suave); cursor: pointer; }
+.zona-archivo.activa, .zona-archivo:hover { border-color: var(--acento); color: var(--texto); }
+.zona-archivo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+details { margin-top: 8px; font-size: 0.9rem; }
+.modo { border: 1px solid var(--borde); border-radius: 8px; margin: 14px 0; display: grid; gap: 6px; font-size: 0.9rem; }
+button { font: inherit; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); cursor: pointer; }
+button.principal { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
+button:disabled { opacity: 0.6; cursor: wait; }
+.entrada .principal { width: 100%; }
+.estado { min-height: 1.2em; font-size: 0.9rem; color: var(--suave); }
+.estado.error { color: var(--aviso-texto); }
+.pestanias { display: flex; gap: 6px; margin-bottom: 12px; }
+.pestanias [aria-selected="true"] { border-color: var(--acento); color: var(--acento); font-weight: 600; }
+.hoja { background: var(--hoja); color: #111; border: 1px solid var(--borde); border-radius: 6px; padding: 36px 40px; min-height: 60vh; font-family: "Latin Modern Roman", "CMU Serif", Georgia, serif; font-size: 0.95rem; line-height: 1.35; }
+.hoja .vacio { color: #777; font-family: system-ui, sans-serif; }
+.hoja .nombre { font-size: 1.7rem; font-weight: 700; margin: 0; }
+.hoja .contacto { margin: 2px 0 10px; }
+.hoja h3 { font-size: 1.05rem; border-bottom: 1px solid #333; margin: 14px 0 6px; padding-bottom: 2px; }
+.hoja .cabecera { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; }
+.hoja .cabecera span:last-child { font-weight: 400; white-space: nowrap; }
+.hoja ul { margin: 3px 0 8px; padding-left: 1.2em; }
+.codigo { background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 14px; overflow: auto; max-height: 70vh; font-size: 0.8rem; white-space: pre-wrap; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.acciones form { margin: 0; }
+.etiquetas { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.etiquetas li { background: var(--ok); color: var(--ok-texto); padding: 3px 9px; border-radius: 999px; font-size: 0.82rem; }
+.etiquetas.faltan li { background: var(--falta); color: var(--falta-texto); }
+.nota { font-size: 0.8rem; color: var(--suave); }
+.avisos { background: var(--aviso); color: var(--aviso-texto); border-radius: 8px; padding: 10px 12px; margin-top: 12px; font-size: 0.85rem; }
+.avisos ul { padding-left: 1.1em; margin: 0; }
+.pie { padding: 8px 24px 24px; font-size: 0.82rem; color: var(--suave); }
+@media (max-width: 1100px) { .grilla { grid-template-columns: 1fr 2fr; } .analisis { grid-column: 1 / -1; } }
+@media (max-width: 720px) {
+  .grilla { grid-template-columns: 1fr; padding: 12px 16px; } .barra, .pie { padding-left: 16px; padding-right: 16px; }
+  .hoja { padding: 20px 16px; }
+}
