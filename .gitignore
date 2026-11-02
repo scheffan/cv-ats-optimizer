@@ -1,0 +1,8 @@
+node_modules/
+web/vendor/
+test-results/
+playwright-report/
+.wrangler/
+.dev.vars
+*.tex
+!e2e/fixtures/*

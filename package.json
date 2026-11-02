@@ -1,0 +1,22 @@
+{
+  "name": "cv-ats-optimizer",
+  "version": "1.0.0",
+  "description": "Adapta tu CV a una oferta laboral en formato LaTeX apto para ATS, sin guardar datos.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "vendor": "node scripts/vendor.js",
+    "dev": "npm run vendor && node scripts/servidor.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "npm run vendor && playwright test"
+  },
+  "dependencies": {
+    "mammoth": "1.8.0",
+    "pdfjs-dist": "4.4.168",
+    "pdfmake": "0.2.12"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  },
+  "license": "MIT"
+}
