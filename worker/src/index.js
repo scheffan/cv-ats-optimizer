@@ -3,6 +3,7 @@
 import { armarMensajes, validarEntrada, normalizarCv } from '../../web/js/prompt.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MAX_BYTES = 40_000;
 // Groq retira modelos seguido: la lista se puede cambiar en wrangler.toml (MODELOS) sin tocar código.
 const MODELOS_POR_DEFECTO = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 
@@ -34,7 +35,7 @@ function cabecerasCors(origen, env) {
 function responder(cuerpo, estado, cors) {
   return new Response(JSON.stringify(cuerpo), {
     status: estado,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...cors },
   });
 }
 
@@ -72,8 +73,13 @@ export default {
       if (!success) return responder({ error: 'Muchos pedidos seguidos. Probá de nuevo en un minuto.' }, 429, cors);
     }
 
+    // Cortamos pedidos gigantes antes de procesarlos (CV + oferta + datos sumados entran de sobra).
+    const largo = Number(request.headers.get('Content-Length') ?? 0);
+    if (largo > MAX_BYTES) return responder({ error: 'El pedido es demasiado grande.' }, 413, cors);
+    const crudo = await request.text();
+    if (crudo.length > MAX_BYTES) return responder({ error: 'El pedido es demasiado grande.' }, 413, cors);
     let datos;
-    try { datos = await request.json(); } catch { return responder({ error: 'JSON inválido' }, 400, cors); }
+    try { datos = JSON.parse(crudo); } catch { return responder({ error: 'JSON inválido' }, 400, cors); }
     const entrada = validarEntrada(datos);
     if (entrada.error) return responder({ error: entrada.error }, 400, cors);
 

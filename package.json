@@ -11,8 +11,8 @@
     "test:e2e": "npm run vendor && playwright test"
   },
   "dependencies": {
-    "mammoth": "1.8.0",
-    "pdfjs-dist": "4.4.168",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.4.299",
     "pdfmake": "0.2.12"
   },
   "devDependencies": {

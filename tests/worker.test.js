@@ -108,3 +108,10 @@ test('usa los modelos de la variable MODELOS o los de por defecto', () => {
   assert.deepEqual(listaModelos({ MODELOS: 'a, b' }), ['a', 'b']);
   assert.equal(listaModelos({})[0], 'openai/gpt-oss-120b');
 });
+
+test('rechaza pedidos demasiado grandes antes de procesarlos', async () => {
+  globalThis.fetch = async () => { throw new Error('no debería llamar'); };
+  const r = await worker.fetch(pedido({ cv: 'x'.repeat(50_000), oferta: OFERTA }), env);
+  assert.equal(r.status, 413);
+  assert.equal(r.headers.get('X-Content-Type-Options'), 'nosniff');
+});

@@ -27,6 +27,16 @@ No hay base de datos, ni cuentas, ni registros. El texto del CV viaja solo para 
 
 Si querés que no salga nada de tu compu, usá el **modo local** con Ollama.
 
+## Seguridad
+
+- **Sin datos guardados:** no hay base de datos ni cuentas; el Worker tiene los logs apagados y responde con `Cache-Control: no-store`.
+- **Clave escondida:** la clave de Groq vive como secreto en Cloudflare; nunca llega al navegador ni al repo.
+- **Abuso:** CORS solo para la web, límite de 5 pedidos por minuto por IP, tope de tamaño (413 si el pedido es gigante) y validación de cada campo.
+- **XSS:** todo lo que viene de la IA se muestra como texto (`textContent`), con Content Security Policy y sin scripts de terceros. Hay un test E2E que intenta inyectar HTML.
+- **LaTeX:** los caracteres especiales se escapan, así no se pueden colar comandos en el `.tex`.
+- **Dependencias:** `npm audit` sin vulnerabilidades; versiones fijas.
+- **No inventar:** además de las instrucciones a la IA, un control propio marca empresas, fechas o números que no estaban en tu CV, y se rechaza texto tecleado al azar.
+
 ## Cómo está armado
 
 ```
@@ -46,7 +56,7 @@ Navegador (GitHub Pages)                 Cloudflare Worker              Groq
 
 | Tipo | Qué cubre | Cantidad |
 |---|---|---|
-| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos, idioma, datos agregados, texto sin sentido | 35 |
+| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos, idioma, datos agregados, texto sin sentido, tope de tamaño | 36 |
 | E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 26 |
 | LaTeX (CI) | Compila la plantilla con `pdflatex`, incluso con caracteres como `# & % _ \` | 1 |
 
