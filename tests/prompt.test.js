@@ -20,7 +20,7 @@ test('rechaza CV vacío, oferta corta y textos gigantes', () => {
   assert.ok(validarEntrada({ cv: CV_ORIGINAL, oferta: 'corta' }).error);
   assert.ok(validarEntrada({ cv: 'x'.repeat(LIMITE_CV + 1), oferta: OFERTA }).error);
   assert.ok(validarEntrada({ cv: 123, oferta: OFERTA }).error);
-  assert.deepEqual(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA }), { cv: CV_ORIGINAL, oferta: OFERTA });
+  assert.deepEqual(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA }), { cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'es' });
 });
 
 test('normaliza respuestas con campos faltantes o de otro tipo', () => {
@@ -39,4 +39,11 @@ test('conserva los proyectos y pide no descartar secciones', () => {
 test('falla si la respuesta no tiene ni nombre ni experiencia', () => {
   assert.throws(() => normalizarCv({}));
   assert.equal(normalizarCv(CV_IA).nombre, 'Juan Gómez');
+});
+
+test('pide el CV en el idioma elegido y no acepta idiomas desconocidos', () => {
+  assert.match(armarMensajes(CV_ORIGINAL, OFERTA, 'en')[0].content, /todo el CV en inglés/);
+  assert.match(armarMensajes(CV_ORIGINAL, OFERTA)[0].content, /todo el CV en español/);
+  assert.equal(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'fr' }).idioma, 'es');
+  assert.equal(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'en' }).idioma, 'en');
 });

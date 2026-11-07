@@ -1,5 +1,6 @@
 // Arma un CV en LaTeX de una columna, apto para ATS, a partir de datos estructurados.
 // Sin tablas, sin columnas, sin íconos: texto plano que los ATS leen bien.
+import { titulos } from './idiomas.js';
 
 const ESPECIALES = {
   '\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', '$': '\\$', '&': '\\&',
@@ -30,6 +31,7 @@ function entrada({ titulo, lugar, fechas, logros }) {
 export function cvALatex(cv) {
   const { nombre = '', contacto = [], resumen = '', experiencia = [], educacion = [], proyectos = [],
     habilidades = [], otros = [] } = cv;
+  const t = titulos(cv);
   return `\\documentclass[11pt]{article}
 \\usepackage[utf8]{inputenc}
 \\usepackage[T1]{fontenc}
@@ -44,6 +46,6 @@ export function cvALatex(cv) {
 {\\LARGE\\textbf{${escapar(nombre)}}}\\\\
 ${contacto.filter(Boolean).map(escapar).join(' | ')}
 
-${seccion('Perfil', resumen ? escapar(resumen) : '')}${seccion('Experiencia', experiencia.map(entrada).join('\n'))}${seccion('Educación', educacion.map(entrada).join('\n'))}${seccion('Proyectos', proyectos.map(entrada).join('\n'))}${seccion('Habilidades', habilidades.filter(Boolean).map(escapar).join(', '))}${seccion('Otros', vinetas(otros))}\\end{document}
+${seccion(t.perfil, resumen ? escapar(resumen) : '')}${seccion(t.experiencia, experiencia.map(entrada).join('\n'))}${seccion(t.educacion, educacion.map(entrada).join('\n'))}${seccion(t.proyectos, proyectos.map(entrada).join('\n'))}${seccion(t.habilidades, habilidades.filter(Boolean).map(escapar).join(', '))}${seccion(t.otros, vinetas(otros))}\\end{document}
 `;
 }

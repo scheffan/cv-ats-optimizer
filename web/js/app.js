@@ -3,6 +3,7 @@ import { optimizar } from './ia.js';
 import { cvALatex } from './latex.js';
 import { cvADocumento, nombreArchivo } from './pdf-cv.js';
 import { verificarCv } from './verificar.js';
+import { titulos } from './idiomas.js';
 
 const $ = (id) => document.getElementById(id);
 let cvActual = null;
@@ -29,9 +30,10 @@ function lista(items) {
 function renderizarVista(cv) {
   const hoja = $('vista-previa');
   hoja.replaceChildren(crear('p', cv.nombre, 'nombre'), crear('p', cv.contacto.join(' | '), 'contacto'));
+  const t = titulos(cv);
   const seccion = (titulo) => hoja.append(crear('h3', titulo));
-  if (cv.resumen) { seccion('Perfil'); hoja.append(crear('p', cv.resumen)); }
-  for (const [titulo, items] of [['Experiencia', cv.experiencia], ['Educación', cv.educacion], ['Proyectos', cv.proyectos ?? []]]) {
+  if (cv.resumen) { seccion(t.perfil); hoja.append(crear('p', cv.resumen)); }
+  for (const [titulo, items] of [[t.experiencia, cv.experiencia], [t.educacion, cv.educacion], [t.proyectos, cv.proyectos ?? []]]) {
     if (!items.length) continue;
     seccion(titulo);
     for (const e of items) {
@@ -41,8 +43,8 @@ function renderizarVista(cv) {
       if (e.logros.length) hoja.append(lista(e.logros));
     }
   }
-  if (cv.habilidades.length) { seccion('Habilidades'); hoja.append(crear('p', cv.habilidades.join(', '))); }
-  if (cv.otros.length) { seccion('Otros'); hoja.append(lista(cv.otros)); }
+  if (cv.habilidades.length) { seccion(t.habilidades); hoja.append(crear('p', cv.habilidades.join(', '))); }
+  if (cv.otros.length) { seccion(t.otros); hoja.append(lista(cv.otros)); }
 }
 
 function renderizarAnalisis(cv, avisos) {
@@ -74,11 +76,12 @@ async function alCargarArchivo(archivo) {
 async function alOptimizar() {
   const boton = $('boton-optimizar');
   const modo = document.querySelector('input[name="modo"]:checked').value;
+  const idioma = document.querySelector('input[name="idioma"]:checked').value;
   const original = $('texto-cv').value;
   boton.disabled = true;
   estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : 'Analizando el CV y la oferta…');
   try {
-    cvActual = await optimizar(original, $('oferta').value, { modo });
+    cvActual = { ...(await optimizar(original, $('oferta').value, { modo, idioma })), idioma };
     latexActual = cvALatex(cvActual);
     renderizarVista(cvActual);
     renderizarAnalisis(cvActual, verificarCv(cvActual, original));

@@ -28,7 +28,7 @@ test('flujo completo: optimiza, muestra la vista previa y el LaTeX', async ({ pa
   await page.getByTestId('optimizar').click();
   const cuerpo = (await pedido).postDataJSON();
   expect(cuerpo.cv).toContain('Tienda Nube');
-  expect(Object.keys(cuerpo).sort()).toEqual(['cv', 'oferta']); // solo viaja el texto, nada más
+  expect(Object.keys(cuerpo).sort()).toEqual(['cv', 'idioma', 'oferta']); // solo viaja el texto, nada más
 
   await expect(page.getByTestId('vista-previa')).toContainText('Juan Gómez');
   await expect(page.getByTestId('coincidencias')).toContainText('Playwright');
@@ -92,4 +92,16 @@ test('no carga nada de dominios externos', async ({ page }) => {
   await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.pdf');
   await expect(page.getByRole('status')).toContainText('CV leído');
   expect(externos).toEqual([]);
+});
+
+test('genera el CV en inglés si se elige English', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByText('English').click();
+  const pedido = page.waitForRequest(API);
+  await page.getByTestId('optimizar').click();
+  expect((await pedido).postDataJSON().idioma).toBe('en');
+  await expect(page.getByTestId('vista-previa')).toContainText('Experience');
+  await page.getByRole('tab', { name: 'LaTeX' }).click();
+  await expect(page.getByTestId('vista-latex')).toContainText('\\section*{Skills}');
 });

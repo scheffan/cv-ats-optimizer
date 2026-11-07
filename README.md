@@ -17,6 +17,7 @@ Web gratuita para adaptar tu CV a una oferta laboral puntual. Subís tu CV, peg�
 - Mantiene tu tono: misma persona, mismo registro y mismo idioma. La idea es que cada CV siga sonando a vos y no a una plantilla.
 - **No inventa nada.** Lo que la oferta pide y tu CV no tiene aparece aparte, como "faltantes", para que decidas vos.
 - Además, un control propio revisa el resultado y avisa si aparece una empresa, fecha o número que no estaba en tu original.
+- Genera el CV en español o en inglés (traduce con fidelidad si tu original está en otro idioma).
 - Exporta a PDF, a `.tex` o lo abre directo en Overleaf.
 
 ## Privacidad
@@ -44,8 +45,8 @@ Navegador (GitHub Pages)                 Cloudflare Worker              Groq
 
 | Tipo | Qué cubre | Cantidad |
 |---|---|---|
-| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos | 28 |
-| E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 16 |
+| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos, idioma | 30 |
+| E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 18 |
 | LaTeX (CI) | Compila la plantilla con `pdflatex`, incluso con caracteres como `# & % _ \` | 1 |
 
 ```bash

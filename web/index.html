@@ -39,6 +39,14 @@
         <label><input type="radio" name="modo" value="local"> Local (Llama con Ollama en tu compu)</label>
       </fieldset>
 
+      <fieldset class="modo idioma">
+        <legend>Idioma del CV</legend>
+        <div class="selector" role="radiogroup">
+          <label><input type="radio" name="idioma" value="es" checked data-testid="idioma-es"> Español</label>
+          <label><input type="radio" name="idioma" value="en" data-testid="idioma-en"> English</label>
+        </div>
+      </fieldset>
+
       <button id="boton-optimizar" class="principal" data-testid="optimizar">Optimizar CV</button>
       <p id="estado" class="estado" role="status" aria-live="polite"></p>
     </section>

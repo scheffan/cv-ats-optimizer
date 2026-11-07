@@ -56,3 +56,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
   .grilla { grid-template-columns: 1fr; padding: 12px 16px; } .barra, .pie { padding-left: 16px; padding-right: 16px; }
   .hoja { padding: 20px 16px; }
 }
+.selector { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; }
+.selector label { text-align: center; padding: 8px; cursor: pointer; }
+.selector input { position: absolute; opacity: 0; }
+.selector label:has(input:checked) { background: var(--acento); color: var(--acento-texto); font-weight: 600; }
+.selector label:has(input:focus-visible) { outline: 2px solid var(--acento); outline-offset: -2px; }

@@ -28,3 +28,10 @@ test('omite secciones vacías', () => {
   const tex = cvALatex({ nombre: 'X' });
   assert.doesNotMatch(tex, /section/);
 });
+
+test('usa títulos en inglés cuando el CV es en inglés', () => {
+  const tex = cvALatex({ nombre: 'X', idioma: 'en', resumen: 'QA analyst', habilidades: ['SQL'] });
+  assert.match(tex, /\\section\*\{Profile\}/);
+  assert.match(tex, /\\section\*\{Skills\}/);
+  assert.doesNotMatch(tex, /Perfil/);
+});

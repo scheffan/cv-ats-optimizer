@@ -1,5 +1,6 @@
 // Arma el PDF del CV en el navegador con la misma estructura que la plantilla LaTeX.
 // Es texto real (no imagen), así que los ATS lo leen sin problemas.
+import { titulos } from './idiomas.js';
 
 function encabezadoSeccion(titulo) {
   return [
@@ -21,16 +22,17 @@ function entrada({ titulo, lugar, fechas, logros }) {
 }
 
 export function cvADocumento(cv) {
+  const t = titulos(cv);
   const contenido = [
     { text: cv.nombre ?? '', style: 'nombre' },
     { text: (cv.contacto ?? []).join(' | '), margin: [0, 2, 0, 8] },
   ];
-  if (cv.resumen) contenido.push(...encabezadoSeccion('Perfil'), { text: cv.resumen, margin: [0, 0, 0, 6] });
-  if (cv.experiencia?.length) contenido.push(...encabezadoSeccion('Experiencia'), ...cv.experiencia.flatMap(entrada));
-  if (cv.educacion?.length) contenido.push(...encabezadoSeccion('Educación'), ...cv.educacion.flatMap(entrada));
-  if (cv.proyectos?.length) contenido.push(...encabezadoSeccion('Proyectos'), ...cv.proyectos.flatMap(entrada));
-  if (cv.habilidades?.length) contenido.push(...encabezadoSeccion('Habilidades'), { text: cv.habilidades.join(', '), margin: [0, 0, 0, 6] });
-  if (cv.otros?.length) contenido.push(...encabezadoSeccion('Otros'), { ul: cv.otros });
+  if (cv.resumen) contenido.push(...encabezadoSeccion(t.perfil), { text: cv.resumen, margin: [0, 0, 0, 6] });
+  if (cv.experiencia?.length) contenido.push(...encabezadoSeccion(t.experiencia), ...cv.experiencia.flatMap(entrada));
+  if (cv.educacion?.length) contenido.push(...encabezadoSeccion(t.educacion), ...cv.educacion.flatMap(entrada));
+  if (cv.proyectos?.length) contenido.push(...encabezadoSeccion(t.proyectos), ...cv.proyectos.flatMap(entrada));
+  if (cv.habilidades?.length) contenido.push(...encabezadoSeccion(t.habilidades), { text: cv.habilidades.join(', '), margin: [0, 0, 0, 6] });
+  if (cv.otros?.length) contenido.push(...encabezadoSeccion(t.otros), { ul: cv.otros });
 
   return {
     pageSize: 'A4',

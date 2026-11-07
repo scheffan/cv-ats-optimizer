@@ -1,3 +1,5 @@
+import { IDIOMAS } from './idiomas.js';
+
 // Instrucciones para el modelo. La regla de oro: no inventar nada y mantener la voz del original.
 
 export const LIMITE_CV = 15000;
@@ -8,7 +10,7 @@ Vas a recibir el CV de una persona y una oferta laboral. Tu trabajo es reescribi
 
 Reglas que no se negocian:
 1. No inventes nada. Cada empresa, puesto, fecha, título, herramienta, número y logro tiene que estar en el CV original. Si la oferta pide algo que el CV no tiene, NO lo agregues: anotalo en "faltantes".
-2. Mantené el tono de la persona: misma persona gramatical, mismo registro (formal o informal), mismo idioma y el mismo estilo de verbos. Reordená y ajustá, pero que suene a quien lo escribió, no a una plantilla.
+2. Mantené el tono de la persona: misma persona gramatical, mismo registro (formal o informal) y el mismo estilo de verbos. Reordená y ajustá, pero que suene a quien lo escribió, no a una plantilla.
 3. No copies frases de la oferta. Solo podés usar sus palabras clave cuando describen algo que el CV ya demuestra.
 4. Priorizá lo que coincide con la oferta: ponelo primero, con verbos de acción y resultados concretos si el original los tiene.
 5. Una sola columna, sin tablas, sin íconos y sin emojis. Texto plano que un ATS pueda leer.
@@ -29,9 +31,11 @@ Respondé SOLO con un objeto JSON con esta forma:
   "faltantes": ["requisitos de la oferta que el CV no menciona"]
 }`;
 
-export function armarMensajes(cv, oferta) {
+export function armarMensajes(cv, oferta, idioma = 'es') {
+  const nombre = (IDIOMAS[idioma] ?? IDIOMAS.es).nombre;
+  const pedidoIdioma = `\n\nIdioma: escribí todo el CV en ${nombre}. Si el original está en otro idioma, traducilo con fidelidad, sin agregar ni quitar datos y manteniendo el tono. Los nombres de empresas, instituciones y herramientas no se traducen.`;
   return [
-    { role: 'system', content: INSTRUCCIONES },
+    { role: 'system', content: INSTRUCCIONES + pedidoIdioma },
     { role: 'user', content: `CV ORIGINAL:\n"""\n${cv}\n"""\n\nOFERTA LABORAL:\n"""\n${oferta}\n"""` },
   ];
 }
@@ -43,7 +47,8 @@ export function validarEntrada(datos) {
   if (oferta.length < 80) return { error: 'Pegá la descripción completa de la oferta.' };
   if (cv.length > LIMITE_CV) return { error: `El CV supera los ${LIMITE_CV} caracteres.` };
   if (oferta.length > LIMITE_OFERTA) return { error: `La oferta supera los ${LIMITE_OFERTA} caracteres.` };
-  return { cv, oferta };
+  const idioma = datos?.idioma in IDIOMAS ? datos.idioma : 'es';
+  return { cv, oferta, idioma };
 }
 
 const LISTAS = ['contacto', 'experiencia', 'educacion', 'proyectos', 'habilidades', 'otros', 'coincidencias', 'faltantes'];
