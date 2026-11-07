@@ -8,6 +8,8 @@ compatibility_date = "2026-10-01"
 enabled = false
 
 [vars]
+# Modelos de Groq en orden de preferencia (si uno falla, se usa el siguiente).
+MODELOS = "openai/gpt-oss-120b,openai/gpt-oss-20b"
 ORIGENES_PERMITIDOS = "https://scheffan.github.io,http://localhost:5173"
 
 # 5 pedidos por minuto por IP.

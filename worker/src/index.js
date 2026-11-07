@@ -1,9 +1,24 @@
-// Worker de Cloudflare: recibe el texto del CV y la oferta, llama a Llama en Groq y devuelve el CV ordenado.
+// Worker de Cloudflare: recibe el texto del CV y la oferta, llama a un modelo abierto en Groq y devuelve el CV ordenado.
 // No guarda nada: no hay base de datos y nunca se loguea el contenido.
 import { armarMensajes, validarEntrada, normalizarCv } from '../../web/js/prompt.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODELOS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+// Groq retira modelos seguido: la lista se puede cambiar en wrangler.toml (MODELOS) sin tocar código.
+const MODELOS_POR_DEFECTO = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
+
+export function listaModelos(env) {
+  const propios = (env.MODELOS ?? '').split(',').map((m) => m.trim()).filter(Boolean);
+  return propios.length ? propios : MODELOS_POR_DEFECTO;
+}
+
+// Saca el objeto JSON aunque el modelo lo envuelva en ```json o le agregue texto.
+export function extraerJson(texto) {
+  const limpio = String(texto ?? '').replace(/```(?:json)?/gi, '');
+  const inicio = limpio.indexOf('{');
+  const fin = limpio.lastIndexOf('}');
+  if (inicio === -1 || fin <= inicio) throw new Error('Sin JSON');
+  return JSON.parse(limpio.slice(inicio, fin + 1));
+}
 
 function cabecerasCors(origen, env) {
   const permitidos = (env.ORIGENES_PERMITIDOS ?? '').split(',').map((o) => o.trim()).filter(Boolean);
@@ -24,13 +39,15 @@ function responder(cuerpo, estado, cors) {
 }
 
 async function llamarGroq(mensajes, env, modelo) {
+  const cuerpo = {
+    model: modelo, messages: mensajes, temperature: 0.4, max_completion_tokens: 6000,
+    response_format: { type: 'json_object' },
+  };
+  if (modelo.startsWith('openai/gpt-oss')) cuerpo.reasoning_effort = 'low';
   return fetch(GROQ_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: modelo, messages: mensajes, temperature: 0.4, max_tokens: 4000,
-      response_format: { type: 'json_object' },
-    }),
+    body: JSON.stringify(cuerpo),
   });
 }
 
@@ -61,18 +78,23 @@ export default {
     if (entrada.error) return responder({ error: entrada.error }, 400, cors);
 
     const mensajes = armarMensajes(entrada.cv, entrada.oferta);
-    for (const modelo of MODELOS) {
+    let ultimoEstado = 0;
+    let cuotaAgotada = false;
+    for (const modelo of listaModelos(env)) {
       const r = await llamarGroq(mensajes, env, modelo);
-      if (r.status === 429) continue; // cuota agotada: probamos con el modelo chico
-      if (!r.ok) return responder({ error: 'El servicio de IA no respondió. Probá más tarde.' }, 502, cors);
+      ultimoEstado = r.status;
+      if (r.status === 401) return responder({ error: 'La clave de Groq no es válida.' }, 502, cors);
+      if (r.status === 429) { cuotaAgotada = true; continue; }
+      if (!r.ok) continue; // modelo retirado o caído: probamos con el siguiente
       try {
         const json = await r.json();
-        const cv = normalizarCv(JSON.parse(json.choices[0].message.content));
+        const cv = normalizarCv(extraerJson(json.choices[0].message.content));
         return responder({ cv, modelo }, 200, cors);
       } catch {
-        return responder({ error: 'La IA devolvió una respuesta inválida. Probá de nuevo.' }, 502, cors);
+        continue; // respuesta inválida: probamos con el siguiente
       }
     }
-    return responder({ error: 'Se agotó la cuota gratuita de hoy. Probá mañana o usá el modo local.' }, 503, cors);
+    if (cuotaAgotada) return responder({ error: 'Se agotó la cuota gratuita de hoy. Probá mañana o usá el modo local.' }, 503, cors);
+    return responder({ error: `El servicio de IA no respondió (código ${ultimoEstado}). Probá más tarde.` }, 502, cors);
   },
 };

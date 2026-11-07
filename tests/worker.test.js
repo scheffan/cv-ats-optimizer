@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/src/index.js';
+import worker, { extraerJson, listaModelos } from '../worker/src/index.js';
 import { CV_ORIGINAL, OFERTA, CV_IA } from './datos.js';
 
 const ORIGEN = 'https://scheffan.github.io';
@@ -55,11 +55,11 @@ test('si el modelo grande se queda sin cuota, usa el chico', async () => {
   globalThis.fetch = async (url, opciones) => {
     const { model } = JSON.parse(opciones.body);
     llamadas.push(model);
-    return model.includes('70b') ? new Response('{}', { status: 429 }) : respuestaGroq(CV_IA);
+    return model.includes('120b') ? new Response('{}', { status: 429 }) : respuestaGroq(CV_IA);
   };
   const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), env);
   assert.equal(r.status, 200);
-  assert.deepEqual(llamadas, ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']);
+  assert.deepEqual(llamadas, ['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
 });
 
 test('maneja una respuesta que no es JSON válido', async () => {
@@ -74,4 +74,37 @@ test('responde el preflight de CORS y 404 en otras rutas', async () => {
   assert.equal(pre.headers.get('Access-Control-Allow-Origin'), ORIGEN);
   const otra = await worker.fetch(pedido({}, { ruta: '/admin' }), env);
   assert.equal(otra.status, 404);
+});
+
+test('si un modelo fue retirado (404), pasa al siguiente', async () => {
+  globalThis.fetch = async (url, opciones) => {
+    const { model } = JSON.parse(opciones.body);
+    return model === 'viejo' ? new Response('{}', { status: 404 }) : respuestaGroq(CV_IA);
+  };
+  const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), { ...env, MODELOS: 'viejo, nuevo' });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).modelo, 'nuevo');
+});
+
+test('avisa claro si la clave de Groq es inválida', async () => {
+  globalThis.fetch = async () => new Response('{}', { status: 401 });
+  const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), env);
+  assert.match((await r.json()).error, /clave de Groq/);
+});
+
+test('si fallan todos los modelos, informa el código', async () => {
+  globalThis.fetch = async () => new Response('{}', { status: 500 });
+  const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), env);
+  assert.equal(r.status, 502);
+  assert.match((await r.json()).error, /código 500/);
+});
+
+test('extrae el JSON aunque venga envuelto en texto o en ```json', () => {
+  assert.deepEqual(extraerJson('Acá está:\n```json\n{"nombre":"Ana"}\n```'), { nombre: 'Ana' });
+  assert.throws(() => extraerJson('sin json'));
+});
+
+test('usa los modelos de la variable MODELOS o los de por defecto', () => {
+  assert.deepEqual(listaModelos({ MODELOS: 'a, b' }), ['a', 'b']);
+  assert.equal(listaModelos({})[0], 'openai/gpt-oss-120b');
 });

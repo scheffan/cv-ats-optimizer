@@ -13,7 +13,7 @@ Web gratuita para adaptar tu CV a una oferta laboral puntual. Subís tu CV, peg�
 ## Qué hace
 
 - Lee tu CV en PDF, DOCX o TXT **dentro del navegador** (el archivo no se sube a ningún lado).
-- Cruza el CV con la oferta usando Llama 3.3 70B y reordena todo para priorizar lo que coincide.
+- Cruza el CV con la oferta usando un modelo de lenguaje abierto (gpt-oss 120B en Groq, o Llama en tu compu con Ollama) y reordena todo para priorizar lo que coincide.
 - Mantiene tu tono: misma persona, mismo registro y mismo idioma. La idea es que cada CV siga sonando a vos y no a una plantilla.
 - **No inventa nada.** Lo que la oferta pide y tu CV no tiene aparece aparte, como "faltantes", para que decidas vos.
 - Además, un control propio revisa el resultado y avisa si aparece una empresa, fecha o número que no estaba en tu original.
@@ -30,21 +30,21 @@ Si querés que no salga nada de tu compu, usá el **modo local** con Ollama.
 ```
 Navegador (GitHub Pages)                 Cloudflare Worker              Groq
 ┌──────────────────────────┐   texto    ┌──────────────────────┐       ┌──────────────┐
-│ pdf.js / mammoth: lee CV │ ─────────> │ valida y limita x IP │ ────> │ Llama 3.3 70B│
+│ pdf.js / mammoth: lee CV │ ─────────> │ valida y limita x IP │ ────> │ gpt-oss-120b │
 │ arma LaTeX y PDF         │ <───────── │ clave API escondida  │ <──── │ (JSON)       │
 │ verifica que no invente  │    JSON    │ no guarda nada       │       └──────────────┘
 └──────────────────────────┘            └──────────────────────┘
 ```
 
 - **Front:** HTML, CSS y JavaScript sin frameworks, publicado en GitHub Pages.
-- **Back:** un Cloudflare Worker (plan gratis) que guarda la clave de Groq como secreto, acepta solo pedidos de la web y limita a 5 pedidos por minuto por IP. Si se agota la cuota del modelo grande, pasa a Llama 3.1 8B.
+- **Back:** un Cloudflare Worker (plan gratis) que guarda la clave de Groq como secreto, acepta solo pedidos de la web y limita a 5 pedidos por minuto por IP. Si un modelo falla, se queda sin cuota o Groq lo retira, pasa al siguiente de la lista `MODELOS` de `worker/wrangler.toml`, que se cambia sin tocar código.
 - **IA:** la API gratuita de Groq. El modelo devuelve JSON y la plantilla LaTeX se arma en el navegador, así el formato siempre sale prolijo y escapado.
 
 ## Tests
 
 | Tipo | Qué cubre | Cantidad |
 |---|---|---|
-| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, errores) | 21 |
+| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores) | 26 |
 | E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 16 |
 | LaTeX (CI) | Compila la plantilla con `pdflatex`, incluso con caracteres como `# & % _ \` | 1 |
 
