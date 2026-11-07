@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armarMensajes, validarEntrada, validarAgregados, normalizarCv, INSTRUCCIONES, LIMITE_CV } from '../web/js/prompt.js';
+import { armarMensajes, textoAgregados, validarEntrada, validarAgregados, normalizarCv, INSTRUCCIONES, LIMITE_CV } from '../web/js/prompt.js';
 import { CV_ORIGINAL, OFERTA, CV_IA } from './datos.js';
 
 test('las instrucciones prohíben inventar y piden mantener el tono', () => {
@@ -64,4 +64,10 @@ test('valida y recorta los datos agregados', () => {
   assert.equal(a.requisito.length, 80);
   assert.equal(a.detalle, '');
   assert.equal(validarAgregados([{ requisito: 'sin lugar' }]).length, 0);
+});
+
+test('descarta un detalle tecleado al azar y pide no inventar contexto', () => {
+  const [a] = validarAgregados([{ requisito: 'Mainframe', lugar: 'MaitWeb', detalle: 'automatice asuhfausifhuaisfagsfasf' }]);
+  assert.equal(a.detalle, '');
+  assert.match(textoAgregados([a]), /no inventes tareas, contextos/);
 });

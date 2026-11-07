@@ -5,6 +5,7 @@ import { cvADocumento, nombreArchivo } from './pdf-cv.js';
 import { verificarCv } from './verificar.js';
 import { titulos } from './idiomas.js';
 import { textoAgregados } from './prompt.js';
+import { pareceSinSentido } from './detalle.js';
 
 const $ = (id) => document.getElementById(id);
 let cvActual = null;
@@ -219,6 +220,7 @@ $('form-agregar').addEventListener('submit', (e) => {
   const lugar = $('agregar-lugar').value;
   if (!lugar) { estadoAnalisis('Elegí dónde lo usaste.', 'error'); $('agregar-lugar').focus(); return; }
   const detalle = $('agregar-detalle').value.trim();
+  if (pareceSinSentido(detalle)) { estadoAnalisis('Lo que escribiste en "¿Cómo lo usaste?" no parece una frase. Corregilo o dejalo vacío.', 'error'); $('agregar-detalle').focus(); return; }
   for (const requisito of seleccionados) agregados.push({ requisito, lugar, detalle, incluido: false });
   cerrarFormulario();
   renderizarAgregados();

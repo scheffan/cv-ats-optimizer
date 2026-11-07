@@ -1,4 +1,5 @@
 import { IDIOMAS } from './idiomas.js';
+import { pareceSinSentido } from './detalle.js';
 
 // Instrucciones para el modelo. La regla de oro: no inventar nada y mantener la voz del original.
 
@@ -36,7 +37,7 @@ Respondé SOLO con un objeto JSON con esta forma:
 export function textoAgregados(agregados = []) {
   if (!agregados.length) return '';
   const lineas = agregados.map((a) => `- ${a.requisito}: lo usó en "${a.lugar}"${a.detalle ? `. Detalle: ${a.detalle}` : ''}`);
-  return `\n\nDATOS AGREGADOS POR LA PERSONA (son reales, los confirmó ella; integralos en la experiencia o el proyecto indicado, con su tono, y no los pongas en faltantes):\n${lineas.join('\n')}`;
+  return `\n\nDATOS AGREGADOS POR LA PERSONA (son reales, los confirmó ella; integralos en la experiencia o el proyecto indicado, con su tono, y no los pongas en faltantes. Usá SOLO lo que dice cada línea: no inventes tareas, contextos, sectores ni resultados que la persona no escribió. Si no hay detalle o no se entiende, mencioná el requisito de forma simple, por ejemplo "Trabajé con Docker"):\n${lineas.join('\n')}`;
 }
 
 export function armarMensajes(cv, oferta, idioma = 'es', agregados = []) {
@@ -69,6 +70,7 @@ export function validarAgregados(lista) {
   if (lista.length > MAX_AGREGADOS) return { error: `Podés agregar hasta ${MAX_AGREGADOS} datos.` };
   return lista
     .map((a) => ({ requisito: recortar(a?.requisito, 80), lugar: recortar(a?.lugar, 150), detalle: recortar(a?.detalle, 300) }))
+    .map((a) => (pareceSinSentido(a.detalle) ? { ...a, detalle: '' } : a))
     .filter((a) => a.requisito && a.lugar);
 }
 

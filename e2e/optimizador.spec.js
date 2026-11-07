@@ -165,3 +165,15 @@ test('permite elegir varios faltantes a la vez y obliga a elegir dónde', async 
   await expect(page.getByTestId('agregados')).toContainText('GitHub Actions → Analista QA — Tienda Nube');
   await expect(page.getByTestId('actualizar')).toHaveText('Actualizar CV (2 sin aplicar)');
 });
+
+test('no acepta un detalle tecleado al azar', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await page.getByRole('button', { name: '+ Docker' }).click();
+  await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Nube');
+  await page.getByTestId('agregar-detalle').fill('automatice asuhfausifhuaisfagsfasf');
+  await page.getByTestId('agregar-confirmar').click();
+  await expect(page.getByTestId('estado-analisis')).toContainText('no parece una frase');
+  await expect(page.getByTestId('agregados')).toBeHidden();
+});
