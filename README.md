@@ -10,7 +10,7 @@ Web gratuita para adaptar tu CV a una oferta laboral puntual. Subís tu CV, peg�
 
 ![Demo de la app](docs/demo.gif)
 
-> La web pública funciona en **modo demo**: muestra un CV de ejemplo con datos ficticios y una respuesta grabada, así se puede ver todo el flujo sin gastar la cuota gratuita de la IA. Para usarla con tu propio CV, corré el proyecto en tu compu (con Ollama o tu propia clave de Groq) siguiendo los pasos de abajo.
+> **Uso gratis:** 1 CV por día por persona (con hasta 2 actualizaciones). Con "Ver un ejemplo" podés recorrer todo el flujo con un CV ficticio sin gastar tu uso. Si querés más, corré el proyecto en tu compu con Ollama o tu propia clave de Groq.
 
 ## Qué hace
 
@@ -25,7 +25,7 @@ Web gratuita para adaptar tu CV a una oferta laboral puntual. Subís tu CV, peg�
 
 ## Privacidad
 
-No hay base de datos, ni cuentas, ni registros. El texto del CV viaja solo para procesarse: el Worker no guarda nada, responde con `Cache-Control: no-store` y tiene los logs desactivados. Las librerías se sirven desde el mismo sitio, sin CDNs ni analíticas de terceros (hay un test E2E que lo verifica).
+No hay base de datos, ni cuentas, ni registros del contenido. Para el límite diario solo se guarda un contador anónimo: un hash de la IP con sal secreta, que se borra solo a las 48 horas. El texto del CV viaja solo para procesarse: el Worker no guarda nada, responde con `Cache-Control: no-store` y tiene los logs desactivados. Las librerías se sirven desde el mismo sitio, sin CDNs ni analíticas de terceros (hay un test E2E que lo verifica).
 
 Si querés que no salga nada de tu compu, usá el **modo local** con Ollama.
 
@@ -33,7 +33,7 @@ Si querés que no salga nada de tu compu, usá el **modo local** con Ollama.
 
 - **Sin datos guardados:** no hay base de datos ni cuentas; el Worker tiene los logs apagados y responde con `Cache-Control: no-store`.
 - **Clave escondida:** la clave de Groq vive como secreto en Cloudflare; nunca llega al navegador ni al repo.
-- **Abuso:** la IA real solo responde con código de acceso (comparado en tiempo constante); el público usa el modo demo. Además, CORS solo para la web, límite de 5 pedidos por minuto por IP, tope de tamaño (413 si el pedido es gigante) y validación de cada campo.
+- **Abuso:** 1 uso gratis por día por persona y un tope total diario (150) que protege la cuota aunque alguien cambie de IP; el dueño usa un código de acceso comparado en tiempo constante. Además, CORS solo para la web, límite de 5 pedidos por minuto por IP, tope de tamaño (413 si el pedido es gigante) y validación de cada campo.
 - **XSS:** todo lo que viene de la IA se muestra como texto (`textContent`), con Content Security Policy y sin scripts de terceros. Hay un test E2E que intenta inyectar HTML.
 - **LaTeX:** los caracteres especiales se escapan, así no se pueden colar comandos en el `.tex`.
 - **Dependencias:** `npm audit` sin vulnerabilidades; versiones fijas.
@@ -58,8 +58,8 @@ Navegador (GitHub Pages)                 Cloudflare Worker              Groq
 
 | Tipo | Qué cubre | Cantidad |
 |---|---|---|
-| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos, idioma, datos agregados, texto sin sentido, tope de tamaño, código de acceso | 38 |
-| E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 36 |
+| Unitarios (`node:test`) | Escapado LaTeX, instrucciones, validación, normalización, detector de datos inventados, PDF y Worker (CORS, límite por IP, cambio de modelo, modelos retirados, errores), proyectos, idioma, datos agregados, texto sin sentido, tope de tamaño, código de acceso, límite diario | 42 |
+| E2E (Playwright, escritorio y celular) | Lectura de PDF real, flujo completo, descargas, aviso de datos inventados, errores, XSS y que no se carguen dominios externos | 38 |
 | LaTeX (CI) | Compila la plantilla con `pdflatex`, incluso con caracteres como `# & % _ \` | 1 |
 
 ```bash
@@ -96,7 +96,7 @@ Una sola vez hay que:
 1. En **Settings > Pages**, elegir *GitHub Actions* como fuente.
 2. Crear una clave gratis en [Groq](https://console.groq.com/keys) y un token de [Cloudflare](https://dash.cloudflare.com/profile/api-tokens) con la plantilla *Edit Cloudflare Workers*.
 3. Cargarlos en **Settings > Secrets and variables > Actions** como `GROQ_API_KEY` y `CLOUDFLARE_API_TOKEN`.
-4. Crear también `CODIGO_ACCESO` con una contraseña larga: es la que habilita la IA real en la web (botón "Tengo un código"). Sin código, la web queda en modo demo.
+4. Crear también `CODIGO_ACCESO` con una contraseña larga: con ella (botón "Tengo un código") usás la web sin límite diario. El contador de usos (Cloudflare KV) lo crea el workflow solo.
 
 ## Licencia
 

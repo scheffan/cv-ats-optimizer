@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { extraerJson, listaModelos, codigoValido } from '../worker/src/index.js';
+import worker, { extraerJson, listaModelos, codigoValido, huellaAnonima } from '../worker/src/index.js';
 import { CV_ORIGINAL, OFERTA, CV_IA } from './datos.js';
 
 const ORIGEN = 'https://scheffan.github.io';
@@ -116,18 +116,71 @@ test('rechaza pedidos demasiado grandes antes de procesarlos', async () => {
   assert.equal(r.headers.get('X-Content-Type-Options'), 'nosniff');
 });
 
-test('sin código de acceso no llama a la IA (modo demo)', async () => {
-  globalThis.fetch = async () => { throw new Error('no debería llamar'); };
-  for (const codigo of [null, 'incorrecto', 'codigo-secret']) {
-    const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo }), env);
-    assert.equal(r.status, 401);
-    assert.equal((await r.json()).demo, true);
-  }
+function kvFalso() {
+  const datos = new Map();
+  return { datos, get: async (k) => datos.get(k) ?? null, put: async (k, v) => { datos.set(k, v); } };
+}
+
+test('sin código: 1 CV gratis por día por persona', async () => {
+  globalThis.fetch = async () => respuestaGroq(CV_IA);
+  const USOS = kvFalso();
+  const r1 = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo: null }), { ...env, USOS });
+  assert.equal(r1.status, 200);
+  const r2 = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo: null }), { ...env, USOS });
+  assert.equal(r2.status, 429);
+  const cuerpo = await r2.json();
+  assert.equal(cuerpo.limiteDiario, true);
+  assert.match(cuerpo.error, /CV gratis de hoy/);
 });
 
-test('si no hay código configurado, la IA queda cerrada', async () => {
-  const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), { ...env, CODIGO_ACCESO: '' });
-  assert.equal(r.status, 401);
+test('sin código: hasta 2 actualizaciones con datos sumados', async () => {
+  globalThis.fetch = async () => respuestaGroq(CV_IA);
+  const USOS = kvFalso();
+  const agregados = [{ requisito: 'Docker', lugar: 'Analista QA — Tienda Nube' }];
+  const estados = [];
+  for (let i = 0; i < 3; i++) {
+    const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA, agregados }, { codigo: null }), { ...env, USOS });
+    estados.push(r.status);
+  }
+  assert.deepEqual(estados, [200, 200, 429]);
+});
+
+test('no se descuenta el uso si la IA falla', async () => {
+  globalThis.fetch = async () => new Response('{}', { status: 500 });
+  const USOS = kvFalso();
+  await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo: null }), { ...env, USOS });
+  assert.equal(USOS.datos.size, 0);
+});
+
+test('el tope global corta a todos y no se guardan IPs', async () => {
+  globalThis.fetch = async () => respuestaGroq(CV_IA);
+  const USOS = kvFalso();
+  const r1 = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo: null }), { ...env, USOS, TOPE_GLOBAL: '1' });
+  assert.equal(r1.status, 200);
+  assert.ok(![...USOS.datos.keys()].some((k) => k.includes('1.2.3.4')));
+  const otra = new Request('https://worker.test/optimizar', { method: 'POST', body: JSON.stringify({ cv: CV_ORIGINAL, oferta: OFERTA }),
+    headers: { Origin: ORIGEN, 'CF-Connecting-IP': '5.6.7.8' } });
+  const r2 = await worker.fetch(otra, { ...env, USOS, TOPE_GLOBAL: '1' });
+  assert.equal(r2.status, 429);
+  assert.match((await r2.json()).error, /agotaron los usos gratis de todos/);
+});
+
+test('con código no hay límite diario; un código incorrecto se rechaza', async () => {
+  globalThis.fetch = async () => respuestaGroq(CV_IA);
+  const USOS = kvFalso();
+  for (let i = 0; i < 3; i++) {
+    const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), { ...env, USOS });
+    assert.equal(r.status, 200);
+  }
+  assert.equal(USOS.datos.size, 0);
+  const mal = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo: 'otro' }), { ...env, USOS });
+  assert.equal(mal.status, 401);
   assert.equal(codigoValido('x', undefined), false);
-  assert.equal(codigoValido('abc', 'abc'), true);
+});
+
+test('la huella anónima es estable y no contiene la IP', async () => {
+  const a = await huellaAnonima('1.2.3.4', 'sal');
+  assert.equal(a, await huellaAnonima('1.2.3.4', 'sal'));
+  assert.notEqual(a, await huellaAnonima('1.2.3.4', 'otra-sal'));
+  assert.ok(!a.includes('1.2.3.4'));
 });

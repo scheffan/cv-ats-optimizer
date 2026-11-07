@@ -13,6 +13,12 @@ enabled = false
 MODELOS = "openai/gpt-oss-120b,openai/gpt-oss-20b"
 ORIGENES_PERMITIDOS = "https://scheffan.github.io,http://localhost:5173"
 
+# Contador anónimo de usos gratis por día (hash de la IP, vence a las 48 h).
+# El id lo completa el workflow "Publicar" (crea el namespace la primera vez).
+[[kv_namespaces]]
+binding = "USOS"
+id = "ID_KV_USOS"
+
 # 5 pedidos por minuto por IP.
 [[ratelimits]]
 name = "LIMITADOR"

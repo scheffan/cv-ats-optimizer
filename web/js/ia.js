@@ -15,11 +15,11 @@ export async function optimizar(cv, oferta, { modo = 'online', idioma = 'es', ag
 async function conWorker({ cv, oferta, idioma, agregados }) {
   const r = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Codigo-Acceso': leerCodigo() },
+    headers: { 'Content-Type': 'application/json', ...(leerCodigo() ? { 'X-Codigo-Acceso': leerCodigo() } : {}) },
     body: JSON.stringify({ cv, oferta, idioma, agregados }),
   });
   const datos = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(datos.error ?? 'No se pudo conectar con el servicio.'), { demo: Boolean(datos.demo) });
+  if (!r.ok) throw Object.assign(new Error(datos.error ?? 'No se pudo conectar con el servicio.'), { codigoInvalido: Boolean(datos.codigoInvalido) });
   return datos.cv;
 }
 

@@ -4,6 +4,38 @@ import { armarMensajes, validarEntrada, normalizarCv } from '../../web/js/prompt
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MAX_BYTES = 40_000;
+// Uso gratis por persona y por día: 1 CV nuevo y hasta 2 actualizaciones con datos sumados.
+export const LIMITE_DIARIO = { optimizar: 1, actualizar: 2 };
+const TOPE_GLOBAL_POR_DEFECTO = 150;
+const DOS_DIAS = 172_800;
+
+// La IP nunca se guarda: solo un hash con sal secreta, que además vence a las 48 h.
+export async function huellaAnonima(ip, sal) {
+  const datos = new TextEncoder().encode(`${sal}|${ip}`);
+  const hash = await crypto.subtle.digest('SHA-256', datos);
+  return [...new Uint8Array(hash)].slice(0, 16).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function revisarCupo(env, ip, tipo) {
+  const dia = new Date().toISOString().slice(0, 10);
+  const persona = `${dia}:${tipo}:${await huellaAnonima(ip, env.CODIGO_ACCESO ?? 'cv-ats')}`;
+  const global = `${dia}:global`;
+  const [usados, total] = await Promise.all([env.USOS.get(persona), env.USOS.get(global)]);
+  const tope = Number(env.TOPE_GLOBAL ?? TOPE_GLOBAL_POR_DEFECTO);
+  if (Number(total ?? 0) >= tope) return { error: 'Hoy se agotaron los usos gratis de todos. Volvé mañana o mirá el ejemplo.' };
+  if (Number(usados ?? 0) >= LIMITE_DIARIO[tipo]) {
+    return { error: tipo === 'optimizar'
+      ? 'Ya usaste tu CV gratis de hoy. Volvé mañana o mirá el ejemplo.'
+      : 'Ya usaste las actualizaciones gratis de hoy. Volvé mañana.' };
+  }
+  return {
+    // Se descuenta solo si la IA respondió bien.
+    descontar: () => Promise.all([
+      env.USOS.put(persona, String(Number(usados ?? 0) + 1), { expirationTtl: DOS_DIAS }),
+      env.USOS.put(global, String(Number(total ?? 0) + 1), { expirationTtl: DOS_DIAS }),
+    ]),
+  };
+}
 // Groq retira modelos seguido: la lista se puede cambiar en wrangler.toml (MODELOS) sin tocar código.
 const MODELOS_POR_DEFECTO = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
 
@@ -76,10 +108,10 @@ export default {
       return responder({ error: 'Origen no permitido' }, 403, cors);
     }
 
-    // La IA real es solo para quien tiene el código; el público usa el modo demo de la web.
-    if (!codigoValido(request.headers.get('X-Codigo-Acceso'), env.CODIGO_ACCESO)) {
-      return responder({ error: 'Código de acceso inválido. La web pública funciona en modo demo.', demo: true }, 401, cors);
-    }
+    // Con código (el dueño) no hay límite diario; un código mal escrito se rechaza para que se note.
+    const codigo = request.headers.get('X-Codigo-Acceso') ?? '';
+    const esDueno = codigoValido(codigo, env.CODIGO_ACCESO);
+    if (codigo && !esDueno) return responder({ error: 'Código de acceso inválido.', codigoInvalido: true }, 401, cors);
 
     // Límite por IP (binding de Rate Limiting de Cloudflare, no guarda datos del usuario).
     if (env.LIMITADOR) {
@@ -98,6 +130,14 @@ export default {
     const entrada = validarEntrada(datos);
     if (entrada.error) return responder({ error: entrada.error }, 400, cors);
 
+    let cupo = null;
+    if (!esDueno) {
+      if (!env.USOS) return responder({ error: 'El uso gratis no está disponible ahora.' }, 503, cors);
+      const ip = request.headers.get('CF-Connecting-IP') ?? 'desconocida';
+      cupo = await revisarCupo(env, ip, entrada.agregados.length ? 'actualizar' : 'optimizar');
+      if (cupo.error) return responder({ error: cupo.error, limiteDiario: true }, 429, cors);
+    }
+
     const mensajes = armarMensajes(entrada.cv, entrada.oferta, entrada.idioma, entrada.agregados);
     let ultimoEstado = 0;
     let cuotaAgotada = false;
@@ -110,6 +150,7 @@ export default {
       try {
         const json = await r.json();
         const cv = normalizarCv(extraerJson(json.choices[0].message.content));
+        if (cupo) await cupo.descontar();
         return responder({ cv, modelo }, 200, cors);
       } catch {
         continue; // respuesta inválida: probamos con el siguiente

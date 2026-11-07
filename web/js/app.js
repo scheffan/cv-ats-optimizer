@@ -14,6 +14,7 @@ let cvActual = null;
 let latexActual = '';
 let agregados = []; // { requisito, lugar, detalle, incluido }
 const seleccionados = new Set();
+let modoEjemplo = false;
 
 function estado(mensaje, esError = false) {
   $('estado').textContent = mensaje;
@@ -180,11 +181,9 @@ async function generar(mensaje) {
   const idioma = document.querySelector('input[name="idioma"]:checked').value;
   const original = $('texto-cv').value;
   const elegido = document.querySelector('input[name="modo"]:checked').value;
-  const modo = elegido === 'local' ? 'local' : (leerCodigo() ? 'online' : 'demo');
-  if (modo === 'demo' && (original.trim() !== CV_DEMO || $('oferta').value.trim() !== OFERTA_DEMO)) {
-    estado('En la demo pública la IA real está apagada para no gastar la cuota. Usá el ejemplo cargado, o corré el proyecto en tu compu (ver GitHub) con el modo Local.', true);
-    return false;
-  }
+  // El ejemplo solo se usa si el texto sigue siendo el de ejemplo; si la persona pegó su CV, va a la IA real.
+  if (modoEjemplo && (original.trim() !== CV_DEMO || $('oferta').value.trim() !== OFERTA_DEMO)) modoEjemplo = false;
+  const modo = elegido === 'local' ? 'local' : (modoEjemplo ? 'demo' : 'online');
   boton.disabled = true;
   $('boton-actualizar').disabled = true;
   estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : mensaje);
@@ -200,7 +199,7 @@ async function generar(mensaje) {
     estado('Listo. Revisalo antes de enviarlo.');
     return true;
   } catch (e) {
-    if (e.demo) { guardarCodigo(''); prepararModo(); }
+    if (e.codigoInvalido) { guardarCodigo(''); prepararModo(); }
     estado(e.message, true);
     return false;
   } finally {
@@ -246,30 +245,31 @@ function prepararModo() {
   const conCodigo = Boolean(leerCodigo());
   $('aviso-demo').hidden = conCodigo;
   $('aviso-real').hidden = !conCodigo;
-  $('etiqueta-online').textContent = conCodigo ? 'Online (modelo abierto en Groq)' : 'Online (demo con ejemplo)';
-  if (!conCodigo && !$('texto-cv').value) {
-    $('texto-cv').value = CV_DEMO;
-    $('oferta').value = OFERTA_DEMO;
-    $('texto-zona').textContent = 'Demo: se usa un CV de ejemplo (Lucía Fernández, datos ficticios)';
-  }
+  $('etiqueta-online').textContent = conCodigo ? 'Online (modelo abierto en Groq, sin límite)' : 'Online (modelo abierto en Groq)';
 }
 
+function cargarEjemplo() {
+  modoEjemplo = true;
+  $('texto-cv').value = CV_DEMO;
+  $('oferta').value = OFERTA_DEMO;
+  $('texto-zona').textContent = 'Ejemplo: CV de Lucía Fernández (datos ficticios)';
+  estado('Ejemplo cargado. Tocá "Optimizar CV": la respuesta está grabada y no gasta tu uso gratis.');
+}
+
+$('boton-ejemplo').addEventListener('click', cargarEjemplo);
 $('boton-codigo').addEventListener('click', () => { $('form-codigo').hidden = false; $('codigo').focus(); });
 $('form-codigo').addEventListener('submit', (e) => {
   e.preventDefault();
   const codigo = $('codigo').value.trim();
   if (!codigo) return;
   guardarCodigo(codigo);
-  $('texto-cv').value = '';
-  $('oferta').value = '';
-  $('texto-zona').textContent = 'Arrastrá tu CV acá o hacé clic (PDF, DOCX o TXT)';
+  modoEjemplo = false;
   prepararModo();
   estado('IA real activada. Subí tu CV y pegá la oferta.');
 });
 $('boton-salir').addEventListener('click', () => {
   guardarCodigo('');
-  $('texto-cv').value = '';
   prepararModo();
-  estado('Volviste a la demo.');
+  estado('Saliste: ahora usás el cupo gratis diario.');
 });
 prepararModo();

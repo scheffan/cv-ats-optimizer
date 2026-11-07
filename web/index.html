@@ -17,7 +17,8 @@
     <h1>CV ATS Optimizer</h1>
     <p>Adaptá tu CV a cada oferta sin perder tu forma de escribir. Nada se guarda.</p>
     <div id="aviso-demo" class="aviso-demo" data-testid="aviso-demo" hidden>
-      <span><strong>Modo demo:</strong> ves un ejemplo con datos ficticios y una respuesta grabada, sin gastar IA. Tocá "Optimizar CV" para verlo funcionar.</span>
+      <span id="texto-aviso"><strong>Gratis:</strong> 1 CV por día por persona, con hasta 2 actualizaciones. ¿Querés ver cómo funciona antes?</span>
+      <button type="button" id="boton-ejemplo" data-testid="boton-ejemplo">Ver un ejemplo</button>
       <button type="button" id="boton-codigo" data-testid="boton-codigo">Tengo un código</button>
       <form id="form-codigo" class="form-codigo" hidden>
         <input type="password" id="codigo" placeholder="Código de acceso" autocomplete="off" data-testid="codigo" aria-label="Código de acceso">
@@ -25,8 +26,8 @@
       </form>
     </div>
     <div id="aviso-real" class="aviso-real" data-testid="aviso-real" hidden>
-      <span>IA real activada en este navegador.</span>
-      <button type="button" id="boton-salir">Volver a la demo</button>
+      <span>Código activado en este navegador: sin límite diario.</span>
+      <button type="button" id="boton-salir">Salir</button>
     </div>
   </header>
 

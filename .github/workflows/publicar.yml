@@ -43,6 +43,20 @@ jobs:
             if [ "$OK" = "true" ]; then echo "Subdominio registrado: $NOMBRE"; exit 0; fi
           done
           echo "::error::No se pudo registrar un subdominio workers.dev"; exit 1
+      - name: Preparar el contador de usos (KV)
+        if: env.TIENE_CLAVES == 'true'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          API=https://api.cloudflare.com/client/v4
+          AUTH="Authorization: Bearer $CF_TOKEN"
+          CUENTA=$(curl -s -H "$AUTH" "$API/accounts" | jq -r '.result[0].id')
+          ID=$(curl -s -H "$AUTH" "$API/accounts/$CUENTA/storage/kv/namespaces?per_page=100" | jq -r '.result[] | select(.title=="cv-ats-usos") | .id')
+          if [ -z "$ID" ]; then
+            ID=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" -d '{"title":"cv-ats-usos"}' "$API/accounts/$CUENTA/storage/kv/namespaces" | jq -r '.result.id')
+          fi
+          if [ -z "$ID" ] || [ "$ID" = "null" ]; then echo "::error::No se pudo crear el KV"; exit 1; fi
+          sed -i "s/ID_KV_USOS/$ID/" worker/wrangler.toml
       - name: Publicar el Worker
         id: deploy
         if: env.TIENE_CLAVES == 'true'

@@ -184,13 +184,13 @@ test('no acepta un detalle tecleado al azar', async ({ page }) => {
   await expect(page.getByTestId('agregados')).toBeHidden();
 });
 
-test('demo: sin código muestra un ejemplo y no llama a la IA', async ({ page }) => {
+test('demo: el ejemplo funciona sin llamar a la IA', async ({ page }) => {
   let llamadas = 0;
   await page.route(API, (route) => { llamadas++; return route.abort(); });
-  await expect(page.getByTestId('aviso-demo')).toBeVisible();
+  await expect(page.getByTestId('aviso-demo')).toContainText('1 CV por día');
+  await page.getByTestId('boton-ejemplo').click();
   await page.getByTestId('optimizar').click();
   await expect(page.getByTestId('vista-previa')).toContainText('Lucía Fernández');
-  await expect(page.getByTestId('faltantes')).toContainText('Docker');
 
   await page.getByRole('button', { name: '+ Docker' }).click();
   await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Ejemplo S.A.');
@@ -201,29 +201,35 @@ test('demo: sin código muestra un ejemplo y no llama a la IA', async ({ page })
   expect(llamadas).toBe(0);
 });
 
-test('demo: con un CV propio avisa que la IA real está apagada', async ({ page }) => {
-  let llamadas = 0;
-  await page.route(API, (route) => { llamadas++; return route.abort(); });
-  await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.txt');
-  await expect(page.getByTestId('estado')).toContainText('CV leído');
+test('demo: sin código, un CV propio va a la IA real sin enviar código', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  const pedido = page.waitForRequest(API);
   await page.getByTestId('optimizar').click();
-  await expect(page.getByTestId('estado')).toContainText('la IA real está apagada');
-  expect(llamadas).toBe(0);
+  expect((await pedido).headers()['x-codigo-acceso']).toBeUndefined();
+  await expect(page.getByTestId('vista-previa')).toContainText('Juan Gómez');
 });
 
-test('demo: con un código se activa la IA real y se puede volver', async ({ page }) => {
+test('demo: al pasar el límite diario muestra el aviso', async ({ page }) => {
+  await simularApi(page, { error: 'Ya usaste tu CV gratis de hoy. Volvé mañana o mirá el ejemplo.', limiteDiario: true }, 429);
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await expect(page.getByTestId('estado')).toContainText('Ya usaste tu CV gratis de hoy');
+});
+
+test('demo: con un código se activa sin límite y se puede salir', async ({ page }) => {
   await page.getByTestId('boton-codigo').click();
   await page.getByTestId('codigo').fill('mi-codigo');
   await page.getByRole('button', { name: 'Activar IA' }).click();
   await expect(page.getByTestId('aviso-real')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('cv-ats-codigo'))).toBe('mi-codigo');
-  await page.getByRole('button', { name: 'Volver a la demo' }).click();
+  await page.getByRole('button', { name: 'Salir' }).click();
   await expect(page.getByTestId('aviso-demo')).toBeVisible();
 });
 
-test('demo: un código incorrecto vuelve al modo demo', async ({ page }) => {
+test('demo: un código incorrecto se borra', async ({ page }) => {
   await page.route(API, (route) => route.fulfill({ status: 401, contentType: 'application/json',
-    body: JSON.stringify({ error: 'Código de acceso inválido. La web pública funciona en modo demo.', demo: true }) }));
+    body: JSON.stringify({ error: 'Código de acceso inválido.', codigoInvalido: true }) }));
   await page.evaluate(() => localStorage.setItem('cv-ats-codigo', 'malo'));
   await page.reload();
   await completar(page);
