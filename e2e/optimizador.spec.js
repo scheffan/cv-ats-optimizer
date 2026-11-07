@@ -13,7 +13,11 @@ async function completar(page) {
   await page.getByTestId('oferta').fill(OFERTA);
 }
 
-test.beforeEach(async ({ page }) => { await page.goto('/'); });
+test.beforeEach(async ({ page }, info) => {
+  // Las pruebas de la IA real usan un código; las del modo demo entran sin código.
+  if (!info.title.startsWith('demo:')) await page.addInitScript(() => localStorage.setItem('cv-ats-codigo', 'codigo-de-prueba'));
+  await page.goto('/');
+});
 
 test('lee el texto de un CV en PDF dentro del navegador', async ({ page }) => {
   await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.pdf');
@@ -26,7 +30,9 @@ test('flujo completo: optimiza, muestra la vista previa y el LaTeX', async ({ pa
   await completar(page);
   const pedido = page.waitForRequest(API);
   await page.getByTestId('optimizar').click();
-  const cuerpo = (await pedido).postDataJSON();
+  const req = await pedido;
+  expect(req.headers()['x-codigo-acceso']).toBe('codigo-de-prueba');
+  const cuerpo = req.postDataJSON();
   expect(cuerpo.cv).toContain('Tienda Nube');
   expect(Object.keys(cuerpo).sort()).toEqual(['agregados', 'cv', 'idioma', 'oferta']); // solo viaja el texto, nada más
 
@@ -176,4 +182,62 @@ test('no acepta un detalle tecleado al azar', async ({ page }) => {
   await page.getByTestId('agregar-confirmar').click();
   await expect(page.getByTestId('estado-analisis')).toContainText('no parece una frase');
   await expect(page.getByTestId('agregados')).toBeHidden();
+});
+
+test('demo: sin código muestra un ejemplo y no llama a la IA', async ({ page }) => {
+  let llamadas = 0;
+  await page.route(API, (route) => { llamadas++; return route.abort(); });
+  await expect(page.getByTestId('aviso-demo')).toBeVisible();
+  await page.getByTestId('optimizar').click();
+  await expect(page.getByTestId('vista-previa')).toContainText('Lucía Fernández');
+  await expect(page.getByTestId('faltantes')).toContainText('Docker');
+
+  await page.getByRole('button', { name: '+ Docker' }).click();
+  await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Ejemplo S.A.');
+  await page.getByTestId('agregar-detalle').fill('levanté entornos de prueba');
+  await page.getByTestId('agregar-confirmar').click();
+  await page.getByTestId('actualizar').click();
+  await expect(page.getByTestId('vista-previa')).toContainText('Levanté entornos de prueba (Docker).');
+  expect(llamadas).toBe(0);
+});
+
+test('demo: con un CV propio avisa que la IA real está apagada', async ({ page }) => {
+  let llamadas = 0;
+  await page.route(API, (route) => { llamadas++; return route.abort(); });
+  await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.txt');
+  await expect(page.getByTestId('estado')).toContainText('CV leído');
+  await page.getByTestId('optimizar').click();
+  await expect(page.getByTestId('estado')).toContainText('la IA real está apagada');
+  expect(llamadas).toBe(0);
+});
+
+test('demo: con un código se activa la IA real y se puede volver', async ({ page }) => {
+  await page.getByTestId('boton-codigo').click();
+  await page.getByTestId('codigo').fill('mi-codigo');
+  await page.getByRole('button', { name: 'Activar IA' }).click();
+  await expect(page.getByTestId('aviso-real')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('cv-ats-codigo'))).toBe('mi-codigo');
+  await page.getByRole('button', { name: 'Volver a la demo' }).click();
+  await expect(page.getByTestId('aviso-demo')).toBeVisible();
+});
+
+test('demo: un código incorrecto vuelve al modo demo', async ({ page }) => {
+  await page.route(API, (route) => route.fulfill({ status: 401, contentType: 'application/json',
+    body: JSON.stringify({ error: 'Código de acceso inválido. La web pública funciona en modo demo.', demo: true }) }));
+  await page.evaluate(() => localStorage.setItem('cv-ats-codigo', 'malo'));
+  await page.reload();
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await expect(page.getByTestId('estado')).toContainText('Código de acceso inválido');
+  await expect(page.getByTestId('aviso-demo')).toBeVisible();
+});
+
+test('el formulario para sumar se cierra después de agregar', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await page.getByRole('button', { name: '+ Docker' }).click();
+  await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Nube');
+  await page.getByTestId('agregar-confirmar').click();
+  await expect(page.getByTestId('form-agregar')).toBeHidden();
 });

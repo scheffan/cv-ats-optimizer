@@ -16,6 +16,18 @@
   <header class="barra">
     <h1>CV ATS Optimizer</h1>
     <p>Adaptá tu CV a cada oferta sin perder tu forma de escribir. Nada se guarda.</p>
+    <div id="aviso-demo" class="aviso-demo" data-testid="aviso-demo" hidden>
+      <span><strong>Modo demo:</strong> ves un ejemplo con datos ficticios y una respuesta grabada, sin gastar IA. Tocá "Optimizar CV" para verlo funcionar.</span>
+      <button type="button" id="boton-codigo" data-testid="boton-codigo">Tengo un código</button>
+      <form id="form-codigo" class="form-codigo" hidden>
+        <input type="password" id="codigo" placeholder="Código de acceso" autocomplete="off" data-testid="codigo" aria-label="Código de acceso">
+        <button type="submit" class="principal">Activar IA</button>
+      </form>
+    </div>
+    <div id="aviso-real" class="aviso-real" data-testid="aviso-real" hidden>
+      <span>IA real activada en este navegador.</span>
+      <button type="button" id="boton-salir">Volver a la demo</button>
+    </div>
   </header>
 
   <main class="grilla">
@@ -35,7 +47,7 @@
 
       <fieldset class="modo">
         <legend>IA</legend>
-        <label><input type="radio" name="modo" value="online" checked> Online (modelo abierto en Groq)</label>
+        <label><input type="radio" name="modo" value="online" checked> <span id="etiqueta-online">Online (modelo abierto en Groq)</span></label>
         <label><input type="radio" name="modo" value="local"> Local (Llama con Ollama en tu compu)</label>
       </fieldset>
 

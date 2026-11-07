@@ -27,9 +27,19 @@ function cabecerasCors(origen, env) {
   return {
     'Access-Control-Allow-Origin': ok ? origen : permitidos[0] ?? 'null',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Codigo-Acceso',
     'Vary': 'Origin',
   };
+}
+
+// Compara en tiempo constante para no filtrar el código por diferencias de tiempo.
+export function codigoValido(recibido, esperado) {
+  if (!esperado || typeof recibido !== 'string') return false;
+  const a = new TextEncoder().encode(recibido);
+  const b = new TextEncoder().encode(esperado);
+  let diferencia = a.length ^ b.length;
+  for (let i = 0; i < b.length; i++) diferencia |= (a[i] ?? 0) ^ b[i];
+  return diferencia === 0;
 }
 
 function responder(cuerpo, estado, cors) {
@@ -64,6 +74,11 @@ export default {
     }
     if (cors['Access-Control-Allow-Origin'] !== origen) {
       return responder({ error: 'Origen no permitido' }, 403, cors);
+    }
+
+    // La IA real es solo para quien tiene el código; el público usa el modo demo de la web.
+    if (!codigoValido(request.headers.get('X-Codigo-Acceso'), env.CODIGO_ACCESO)) {
+      return responder({ error: 'Código de acceso inválido. La web pública funciona en modo demo.', demo: true }, 401, cors);
     }
 
     // Límite por IP (binding de Rate Limiting de Cloudflare, no guarda datos del usuario).

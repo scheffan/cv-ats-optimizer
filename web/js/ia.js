@@ -1,21 +1,25 @@
 // Pide el CV optimizado: al Worker (online) o a Ollama en tu propia compu (modo local).
 import { API_URL, OLLAMA_URL, OLLAMA_MODELO } from './config.js';
 import { armarMensajes, validarEntrada, normalizarCv } from './prompt.js';
+import { leerCodigo } from './acceso.js';
+import { respuestaDemo, esperar } from './demo.js';
 
 export async function optimizar(cv, oferta, { modo = 'online', idioma = 'es', agregados = [] } = {}) {
   const entrada = validarEntrada({ cv, oferta, idioma, agregados });
   if (entrada.error) throw new Error(entrada.error);
-  return modo === 'local' ? conOllama(entrada) : conWorker(entrada);
+  if (modo === 'local') return conOllama(entrada);
+  if (modo === 'demo') { await esperar(1200); return respuestaDemo(entrada.idioma, entrada.agregados); }
+  return conWorker(entrada);
 }
 
 async function conWorker({ cv, oferta, idioma, agregados }) {
   const r = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Codigo-Acceso': leerCodigo() },
     body: JSON.stringify({ cv, oferta, idioma, agregados }),
   });
   const datos = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(datos.error ?? 'No se pudo conectar con el servicio.');
+  if (!r.ok) throw Object.assign(new Error(datos.error ?? 'No se pudo conectar con el servicio.'), { demo: Boolean(datos.demo) });
   return datos.cv;
 }
 

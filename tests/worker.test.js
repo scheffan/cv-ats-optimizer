@@ -1,17 +1,17 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import worker, { extraerJson, listaModelos } from '../worker/src/index.js';
+import worker, { extraerJson, listaModelos, codigoValido } from '../worker/src/index.js';
 import { CV_ORIGINAL, OFERTA, CV_IA } from './datos.js';
 
 const ORIGEN = 'https://scheffan.github.io';
-const env = { GROQ_API_KEY: 'clave-de-prueba', ORIGENES_PERMITIDOS: `${ORIGEN},http://localhost:5173` };
+const env = { GROQ_API_KEY: 'clave-de-prueba', CODIGO_ACCESO: 'codigo-secreto', ORIGENES_PERMITIDOS: `${ORIGEN},http://localhost:5173` };
 const fetchReal = globalThis.fetch;
 let llamadas;
 
-function pedido(cuerpo, { origen = ORIGEN, metodo = 'POST', ruta = '/optimizar' } = {}) {
+function pedido(cuerpo, { origen = ORIGEN, metodo = 'POST', ruta = '/optimizar', codigo = 'codigo-secreto' } = {}) {
   return new Request(`https://worker.test${ruta}`, {
     method: metodo,
-    headers: { Origin: origen, 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' },
+    headers: { Origin: origen, 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4', ...(codigo ? { 'X-Codigo-Acceso': codigo } : {}) },
     body: metodo === 'POST' ? JSON.stringify(cuerpo) : undefined,
   });
 }
@@ -114,4 +114,20 @@ test('rechaza pedidos demasiado grandes antes de procesarlos', async () => {
   const r = await worker.fetch(pedido({ cv: 'x'.repeat(50_000), oferta: OFERTA }), env);
   assert.equal(r.status, 413);
   assert.equal(r.headers.get('X-Content-Type-Options'), 'nosniff');
+});
+
+test('sin código de acceso no llama a la IA (modo demo)', async () => {
+  globalThis.fetch = async () => { throw new Error('no debería llamar'); };
+  for (const codigo of [null, 'incorrecto', 'codigo-secret']) {
+    const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }, { codigo }), env);
+    assert.equal(r.status, 401);
+    assert.equal((await r.json()).demo, true);
+  }
+});
+
+test('si no hay código configurado, la IA queda cerrada', async () => {
+  const r = await worker.fetch(pedido({ cv: CV_ORIGINAL, oferta: OFERTA }), { ...env, CODIGO_ACCESO: '' });
+  assert.equal(r.status, 401);
+  assert.equal(codigoValido('x', undefined), false);
+  assert.equal(codigoValido('abc', 'abc'), true);
 });

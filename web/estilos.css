@@ -1,3 +1,4 @@
+[hidden] { display: none !important; }
 :root {
   --fondo: #f4f5f7; --panel: #ffffff; --texto: #1d2330; --suave: #5b6475; --borde: #d9dde4;
   --acento: #1f5fbf; --acento-texto: #ffffff; --ok: #e6f2ea; --ok-texto: #1e6b3a;
@@ -79,3 +80,9 @@ button.ancho { width: 100%; margin-bottom: 8px; }
 .estado.ok { color: var(--ok-texto); font-weight: 600; }
 @keyframes resaltar { from { box-shadow: 0 0 0 3px var(--acento); } to { box-shadow: 0 0 0 0 transparent; } }
 .hoja.resaltar { animation: resaltar 1.6s ease-out; }
+.aviso-demo, .aviso-real { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 0.9rem; }
+.aviso-demo { background: var(--falta); color: var(--falta-texto); }
+.aviso-real { background: var(--ok); color: var(--ok-texto); }
+.aviso-demo button, .aviso-real button { padding: 6px 12px; }
+.form-codigo { display: flex; gap: 6px; }
+.form-codigo input { font: inherit; padding: 6px 10px; border: 1px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); }

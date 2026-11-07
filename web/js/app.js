@@ -6,6 +6,8 @@ import { verificarCv } from './verificar.js';
 import { titulos } from './idiomas.js';
 import { textoAgregados } from './prompt.js';
 import { pareceSinSentido } from './detalle.js';
+import { leerCodigo, guardarCodigo } from './acceso.js';
+import { CV_DEMO, OFERTA_DEMO } from './demo.js';
 
 const $ = (id) => document.getElementById(id);
 let cvActual = null;
@@ -175,9 +177,14 @@ async function alActualizar() {
 
 async function generar(mensaje) {
   const boton = $('boton-optimizar');
-  const modo = document.querySelector('input[name="modo"]:checked').value;
   const idioma = document.querySelector('input[name="idioma"]:checked').value;
   const original = $('texto-cv').value;
+  const elegido = document.querySelector('input[name="modo"]:checked').value;
+  const modo = elegido === 'local' ? 'local' : (leerCodigo() ? 'online' : 'demo');
+  if (modo === 'demo' && (original.trim() !== CV_DEMO || $('oferta').value.trim() !== OFERTA_DEMO)) {
+    estado('En la demo pública la IA real está apagada para no gastar la cuota. Usá el ejemplo cargado, o corré el proyecto en tu compu (ver GitHub) con el modo Local.', true);
+    return false;
+  }
   boton.disabled = true;
   $('boton-actualizar').disabled = true;
   estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : mensaje);
@@ -193,6 +200,7 @@ async function generar(mensaje) {
     estado('Listo. Revisalo antes de enviarlo.');
     return true;
   } catch (e) {
+    if (e.demo) { guardarCodigo(''); prepararModo(); }
     estado(e.message, true);
     return false;
   } finally {
@@ -233,3 +241,35 @@ $('copiar-tex').addEventListener('click', async () => {
   await navigator.clipboard.writeText(latexActual);
   estado('LaTeX copiado.');
 });
+
+function prepararModo() {
+  const conCodigo = Boolean(leerCodigo());
+  $('aviso-demo').hidden = conCodigo;
+  $('aviso-real').hidden = !conCodigo;
+  $('etiqueta-online').textContent = conCodigo ? 'Online (modelo abierto en Groq)' : 'Online (demo con ejemplo)';
+  if (!conCodigo && !$('texto-cv').value) {
+    $('texto-cv').value = CV_DEMO;
+    $('oferta').value = OFERTA_DEMO;
+    $('texto-zona').textContent = 'Demo: se usa un CV de ejemplo (Lucía Fernández, datos ficticios)';
+  }
+}
+
+$('boton-codigo').addEventListener('click', () => { $('form-codigo').hidden = false; $('codigo').focus(); });
+$('form-codigo').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const codigo = $('codigo').value.trim();
+  if (!codigo) return;
+  guardarCodigo(codigo);
+  $('texto-cv').value = '';
+  $('oferta').value = '';
+  $('texto-zona').textContent = 'Arrastrá tu CV acá o hacé clic (PDF, DOCX o TXT)';
+  prepararModo();
+  estado('IA real activada. Subí tu CV y pegá la oferta.');
+});
+$('boton-salir').addEventListener('click', () => {
+  guardarCodigo('');
+  $('texto-cv').value = '';
+  prepararModo();
+  estado('Volviste a la demo.');
+});
+prepararModo();
