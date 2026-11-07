@@ -9,7 +9,7 @@ function simularApi(page, cuerpo, estado = 200) {
 
 async function completar(page) {
   await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.txt');
-  await expect(page.getByRole('status')).toContainText('CV leído');
+  await expect(page.getByTestId('estado')).toContainText('CV leído');
   await page.getByTestId('oferta').fill(OFERTA);
 }
 
@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => { await page.goto('/'); });
 
 test('lee el texto de un CV en PDF dentro del navegador', async ({ page }) => {
   await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.pdf');
-  await expect(page.getByRole('status')).toContainText('CV leído');
+  await expect(page.getByTestId('estado')).toContainText('CV leído');
   await expect(page.getByTestId('texto-cv')).toHaveValue(/Tienda Nube/);
 });
 
@@ -63,7 +63,7 @@ test('muestra el error del servidor cuando se pasa el límite', async ({ page })
   await simularApi(page, { error: 'Muchos pedidos seguidos. Probá de nuevo en un minuto.' }, 429);
   await completar(page);
   await page.getByTestId('optimizar').click();
-  await expect(page.getByRole('status')).toContainText('Muchos pedidos seguidos');
+  await expect(page.getByTestId('estado')).toContainText('Muchos pedidos seguidos');
 });
 
 test('no llama a la IA si falta la oferta', async ({ page }) => {
@@ -72,7 +72,7 @@ test('no llama a la IA si falta la oferta', async ({ page }) => {
   await page.getByText('Ver o corregir el texto leído').click();
   await page.getByTestId('texto-cv').fill(CV_ORIGINAL);
   await page.getByTestId('optimizar').click();
-  await expect(page.getByRole('status')).toContainText('Pegá la descripción completa');
+  await expect(page.getByTestId('estado')).toContainText('Pegá la descripción completa');
   expect(llamadas).toBe(0);
 });
 
@@ -90,7 +90,7 @@ test('no carga nada de dominios externos', async ({ page }) => {
   page.on('request', (r) => { if (!r.url().startsWith('http://localhost:5173')) externos.push(r.url()); });
   await page.reload();
   await page.getByTestId('archivo-cv').setInputFiles('e2e/fixtures/cv-ejemplo.pdf');
-  await expect(page.getByRole('status')).toContainText('CV leído');
+  await expect(page.getByTestId('estado')).toContainText('CV leído');
   expect(externos).toEqual([]);
 });
 
@@ -118,7 +118,8 @@ test('permite sumar algo que faltaba y actualizar el CV', async ({ page }) => {
   await page.getByTestId('agregar-detalle').fill('levanté entornos de prueba');
   await page.getByTestId('agregar-confirmar').click();
 
-  await expect(page.getByTestId('agregados')).toContainText('Docker · Analista QA — Tienda Nube');
+  await expect(page.getByTestId('agregados')).toContainText('Docker → Analista QA — Tienda Nube (levanté entornos de prueba)');
+  await expect(page.getByTestId('actualizar')).toHaveText('Actualizar CV (1 sin aplicar)');
   await expect(page.getByTestId('faltantes')).not.toContainText('Docker');
 
   await page.unroute(API);
@@ -130,6 +131,9 @@ test('permite sumar algo que faltaba y actualizar el CV', async ({ page }) => {
   expect(cuerpo.agregados).toEqual([{ requisito: 'Docker', lugar: 'Analista QA — Tienda Nube', detalle: 'levanté entornos de prueba' }]);
   await expect(page.getByTestId('vista-previa')).toContainText('Docker');
   await expect(page.getByTestId('avisos')).toBeHidden();
+  await expect(page.getByTestId('estado-analisis')).toContainText('CV actualizado con 1 dato');
+  await expect(page.getByTestId('actualizar')).toHaveText('CV actualizado ✓');
+  await expect(page.getByTestId('actualizar')).toBeDisabled();
 });
 
 test('quitar un dato sumado lo devuelve a la lista de faltantes', async ({ page }) => {
@@ -137,8 +141,27 @@ test('quitar un dato sumado lo devuelve a la lista de faltantes', async ({ page 
   await completar(page);
   await page.getByTestId('optimizar').click();
   await page.getByRole('button', { name: '+ TypeScript' }).click();
+  await page.getByTestId('agregar-lugar').selectOption('Tecnicatura en Programación — UTN');
   await page.getByTestId('agregar-confirmar').click();
   await page.getByRole('button', { name: 'Quitar TypeScript' }).click();
   await expect(page.getByTestId('faltantes')).toContainText('TypeScript');
   await expect(page.getByTestId('actualizar')).toBeHidden();
+});
+
+test('permite elegir varios faltantes a la vez y obliga a elegir dónde', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await page.getByRole('button', { name: '+ TypeScript' }).click();
+  await page.getByRole('button', { name: '+ GitHub Actions' }).click();
+  await expect(page.getByTestId('agregar-confirmar')).toHaveText('Agregar los 2');
+
+  await page.getByTestId('agregar-confirmar').click(); // sin elegir dónde: no agrega
+  await expect(page.getByTestId('agregados')).toBeHidden();
+
+  await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Nube');
+  await page.getByTestId('agregar-confirmar').click();
+  await expect(page.getByTestId('agregados')).toContainText('TypeScript → Analista QA — Tienda Nube');
+  await expect(page.getByTestId('agregados')).toContainText('GitHub Actions → Analista QA — Tienda Nube');
+  await expect(page.getByTestId('actualizar')).toHaveText('Actualizar CV (2 sin aplicar)');
 });

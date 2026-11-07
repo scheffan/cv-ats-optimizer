@@ -75,3 +75,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 button.ancho { width: 100%; margin-bottom: 8px; }
 .agregar { grid-template-columns: minmax(0, 1fr); }
 .agregar select, .agregar textarea { width: 100%; min-width: 0; }
+.etiquetas.sumados li.pendiente { background: var(--falta); color: var(--falta-texto); }
+.estado.ok { color: var(--ok-texto); font-weight: 600; }
+@keyframes resaltar { from { box-shadow: 0 0 0 3px var(--acento); } to { box-shadow: 0 0 0 0 transparent; } }
+.hoja.resaltar { animation: resaltar 1.6s ease-out; }

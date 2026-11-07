@@ -9,8 +9,8 @@ import { textoAgregados } from './prompt.js';
 const $ = (id) => document.getElementById(id);
 let cvActual = null;
 let latexActual = '';
-let agregados = [];
-let requisitoElegido = '';
+let agregados = []; // { requisito, lugar, detalle, incluido }
+const seleccionados = new Set();
 
 function estado(mensaje, esError = false) {
   $('estado').textContent = mensaje;
@@ -53,27 +53,42 @@ function renderizarVista(cv) {
 function renderizarFaltantes() {
   const yaSumados = new Set(agregados.map((a) => a.requisito));
   $('faltantes').replaceChildren(...(cvActual?.faltantes ?? []).filter((f) => !yaSumados.has(f)).map((f) => {
-    const chip = crear('button', `+ ${f}`, 'chip');
+    const elegido = seleccionados.has(f);
+    const chip = crear('button', `${elegido ? '✓' : '+'} ${f}`, 'chip');
     chip.type = 'button';
-    chip.setAttribute('aria-pressed', String(f === requisitoElegido));
-    chip.addEventListener('click', () => abrirFormulario(f));
+    chip.setAttribute('aria-pressed', String(elegido));
+    chip.addEventListener('click', () => alternarRequisito(f));
     const li = crear('li');
     li.append(chip);
     return li;
   }));
 }
 
+function pendientes() {
+  return agregados.filter((a) => !a.incluido).length;
+}
+
 function renderizarAgregados() {
   $('agregados').replaceChildren(...agregados.map((a, i) => {
-    const li = crear('li', `${a.requisito} · ${a.lugar}`);
+    const li = crear('li', null, a.incluido ? 'incluido' : 'pendiente');
+    const texto = crear('span', `${a.incluido ? '✓ ' : ''}${a.requisito} → ${a.lugar}${a.detalle ? ` (${a.detalle})` : ''}`);
     const quitar = crear('button', '×');
     quitar.type = 'button';
     quitar.setAttribute('aria-label', `Quitar ${a.requisito}`);
-    quitar.addEventListener('click', () => { agregados.splice(i, 1); renderizarAgregados(); renderizarFaltantes(); });
-    li.append(quitar);
+    quitar.addEventListener('click', () => {
+      agregados.splice(i, 1);
+      // Si ya estaba en el CV, hay que actualizar para sacarlo.
+      if (a.incluido) agregados.forEach((x) => { x.incluido = false; });
+      renderizarAgregados();
+      renderizarFaltantes();
+    });
+    li.append(texto, quitar);
     return li;
   }));
+  const n = pendientes();
   $('caja-agregados').hidden = agregados.length === 0;
+  $('boton-actualizar').disabled = n === 0;
+  $('boton-actualizar').textContent = n ? `Actualizar CV (${n} sin aplicar)` : 'CV actualizado ✓';
 }
 
 function lugaresPosibles(cv) {
@@ -82,24 +97,32 @@ function lugaresPosibles(cv) {
     .concat('Proyecto personal o curso');
 }
 
-function abrirFormulario(requisito) {
-  requisitoElegido = requisito;
-  $('agregar-requisito').textContent = requisito;
-  $('agregar-lugar').replaceChildren(...lugaresPosibles(cvActual).map((l) => {
-    const op = crear('option', l);
-    op.value = l;
-    return op;
-  }));
-  $('agregar-detalle').value = '';
-  $('form-agregar').hidden = false;
+function alternarRequisito(requisito) {
+  if (seleccionados.has(requisito)) seleccionados.delete(requisito);
+  else seleccionados.add(requisito);
+  if (seleccionados.size && $('form-agregar').hidden) prepararFormulario();
+  $('form-agregar').hidden = seleccionados.size === 0;
+  $('agregar-requisito').textContent = [...seleccionados].join(', ');
+  $('agregar-confirmar').textContent = seleccionados.size > 1 ? `Agregar los ${seleccionados.size}` : 'Agregar';
   renderizarFaltantes();
-  $('agregar-lugar').focus();
+}
+
+function prepararFormulario() {
+  const opciones = [Object.assign(crear('option', 'Elegí una experiencia…'), { value: '', disabled: true, selected: true })];
+  for (const l of lugaresPosibles(cvActual)) opciones.push(Object.assign(crear('option', l), { value: l }));
+  $('agregar-lugar').replaceChildren(...opciones);
+  $('agregar-detalle').value = '';
 }
 
 function cerrarFormulario() {
-  requisitoElegido = '';
+  seleccionados.clear();
   $('form-agregar').hidden = true;
   renderizarFaltantes();
+}
+
+function estadoAnalisis(mensaje, tipo = '') {
+  $('estado-analisis').textContent = mensaje;
+  $('estado-analisis').className = `estado ${tipo}`;
 }
 
 function renderizarAnalisis(cv, avisos) {
@@ -132,12 +155,21 @@ async function alOptimizar() {
   agregados = [];
   cerrarFormulario();
   renderizarAgregados();
+  estadoAnalisis('');
   await generar('Analizando el CV y la oferta…');
 }
 
 async function alActualizar() {
   cerrarFormulario();
-  await generar('Actualizando tu CV con lo que sumaste…');
+  estadoAnalisis('Actualizando tu CV…');
+  const ok = await generar('Actualizando tu CV con lo que sumaste…');
+  if (!ok) { estadoAnalisis('No se pudo actualizar. Probá de nuevo.', 'error'); return; }
+  const n = agregados.length;
+  estadoAnalisis(`✓ CV actualizado con ${n} ${n === 1 ? 'dato' : 'datos'}. Fijate la vista previa.`, 'ok');
+  const hoja = $('vista-previa');
+  hoja.classList.remove('resaltar');
+  void hoja.offsetWidth;
+  hoja.classList.add('resaltar');
 }
 
 async function generar(mensaje) {
@@ -149,19 +181,22 @@ async function generar(mensaje) {
   $('boton-actualizar').disabled = true;
   estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : mensaje);
   try {
-    cvActual = { ...(await optimizar(original, $('oferta').value, { modo, idioma, agregados })), idioma };
+    cvActual = { ...(await optimizar(original, $('oferta').value, { modo, idioma, agregados: agregados.map(({ requisito, lugar, detalle }) => ({ requisito, lugar, detalle })) })), idioma };
     latexActual = cvALatex(cvActual);
     renderizarVista(cvActual);
     renderizarAnalisis(cvActual, verificarCv(cvActual, original + textoAgregados(agregados)));
     $('vista-latex').textContent = latexActual;
     $('snip-overleaf').value = latexActual;
     $('acciones').hidden = false;
+    agregados.forEach((a) => { a.incluido = true; });
     estado('Listo. Revisalo antes de enviarlo.');
+    return true;
   } catch (e) {
     estado(e.message, true);
+    return false;
   } finally {
     boton.disabled = false;
-    $('boton-actualizar').disabled = false;
+    renderizarAgregados();
   }
 }
 
@@ -181,10 +216,13 @@ $('boton-actualizar').addEventListener('click', alActualizar);
 $('agregar-cancelar').addEventListener('click', cerrarFormulario);
 $('form-agregar').addEventListener('submit', (e) => {
   e.preventDefault();
-  agregados.push({ requisito: requisitoElegido, lugar: $('agregar-lugar').value, detalle: $('agregar-detalle').value.trim() });
+  const lugar = $('agregar-lugar').value;
+  if (!lugar) { estadoAnalisis('Elegí dónde lo usaste.', 'error'); $('agregar-lugar').focus(); return; }
+  const detalle = $('agregar-detalle').value.trim();
+  for (const requisito of seleccionados) agregados.push({ requisito, lugar, detalle, incluido: false });
   cerrarFormulario();
   renderizarAgregados();
-  estado('Sumado. Cuando termines, tocá "Actualizar CV".');
+  estadoAnalisis('Sumado. Podés elegir más o tocar "Actualizar CV".');
 });
 for (const b of document.querySelectorAll('[data-vista]')) b.addEventListener('click', () => cambiarVista(b.dataset.vista));
 $('bajar-tex').addEventListener('click', () => descargar(latexActual, nombreArchivo(cvActual, 'tex'), 'application/x-tex'));

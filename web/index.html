@@ -48,7 +48,7 @@
       </fieldset>
 
       <button id="boton-optimizar" class="principal" data-testid="optimizar">Optimizar CV</button>
-      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+      <p id="estado" class="estado" role="status" aria-live="polite" data-testid="estado"></p>
     </section>
 
     <section class="panel salida" aria-label="Resultado">
@@ -76,16 +76,16 @@
       <ul id="coincidencias" class="etiquetas" data-testid="coincidencias"></ul>
       <h2>Lo que pide y tu CV no menciona</h2>
       <ul id="faltantes" class="etiquetas faltan" data-testid="faltantes"></ul>
-      <p class="nota">No se agregan solos. ¿Tenés alguno y te olvidaste de ponerlo? Tocalo para sumarlo.</p>
+      <p class="nota">No se agregan solos. ¿Tenés alguno y te olvidaste de ponerlo? Tocá uno o varios para sumarlos.</p>
 
       <form id="form-agregar" class="agregar" hidden data-testid="form-agregar">
         <p class="agregar-titulo">Sumar <strong id="agregar-requisito"></strong></p>
         <label for="agregar-lugar">¿Dónde lo usaste?</label>
-        <select id="agregar-lugar" data-testid="agregar-lugar"></select>
+        <select id="agregar-lugar" data-testid="agregar-lugar" required></select>
         <label for="agregar-detalle">¿Cómo lo usaste? <span class="opcional">(opcional)</span></label>
         <textarea id="agregar-detalle" rows="2" maxlength="300" placeholder="Ej.: automaticé las pruebas de regresión" data-testid="agregar-detalle"></textarea>
         <div class="fila">
-          <button type="submit" class="principal" data-testid="agregar-confirmar">Agregar</button>
+          <button type="submit" id="agregar-confirmar" class="principal" data-testid="agregar-confirmar">Agregar</button>
           <button type="button" id="agregar-cancelar">Cancelar</button>
         </div>
       </form>
@@ -95,6 +95,7 @@
         <ul id="agregados" class="etiquetas sumados" data-testid="agregados"></ul>
         <button id="boton-actualizar" class="principal ancho" data-testid="actualizar">Actualizar CV</button>
       </div>
+      <p id="estado-analisis" class="estado" role="status" aria-live="polite" data-testid="estado-analisis"></p>
       <div id="avisos" class="avisos" hidden data-testid="avisos">
         <h2>Revisá esto</h2>
         <ul id="lista-avisos"></ul>
