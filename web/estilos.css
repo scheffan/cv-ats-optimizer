@@ -61,3 +61,17 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .selector input { position: absolute; opacity: 0; }
 .selector label:has(input:checked) { background: var(--acento); color: var(--acento-texto); font-weight: 600; }
 .selector label:has(input:focus-visible) { outline: 2px solid var(--acento); outline-offset: -2px; }
+.etiquetas.faltan li:has(button) { padding: 0; background: none; }
+.chip { font-size: 0.82rem; padding: 3px 9px; border-radius: 999px; border: 1px dashed var(--falta-texto); background: var(--falta); color: var(--falta-texto); }
+.chip:hover, .chip[aria-pressed="true"] { border-style: solid; }
+.etiquetas.sumados li { display: inline-flex; align-items: center; gap: 4px; }
+.etiquetas.sumados button { border: 0; background: none; color: inherit; padding: 0 2px; font-size: 0.9rem; line-height: 1; }
+.agregar { display: grid; gap: 6px; background: var(--fondo); border: 1px solid var(--borde); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.85rem; }
+.agregar-titulo { margin: 0 0 2px; }
+.agregar select { font: inherit; padding: 7px; border: 1px solid var(--borde); border-radius: 8px; background: var(--panel); color: var(--texto); }
+.agregar .opcional { color: var(--suave); }
+.agregar .fila { display: flex; gap: 6px; margin-top: 4px; }
+.agregar .fila button { padding: 6px 12px; }
+button.ancho { width: 100%; margin-bottom: 8px; }
+.agregar { grid-template-columns: minmax(0, 1fr); }
+.agregar select, .agregar textarea { width: 100%; min-width: 0; }

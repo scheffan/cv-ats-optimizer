@@ -4,10 +4,13 @@ import { cvALatex } from './latex.js';
 import { cvADocumento, nombreArchivo } from './pdf-cv.js';
 import { verificarCv } from './verificar.js';
 import { titulos } from './idiomas.js';
+import { textoAgregados } from './prompt.js';
 
 const $ = (id) => document.getElementById(id);
 let cvActual = null;
 let latexActual = '';
+let agregados = [];
+let requisitoElegido = '';
 
 function estado(mensaje, esError = false) {
   $('estado').textContent = mensaje;
@@ -47,9 +50,61 @@ function renderizarVista(cv) {
   if (cv.otros.length) { seccion(t.otros); hoja.append(lista(cv.otros)); }
 }
 
+function renderizarFaltantes() {
+  const yaSumados = new Set(agregados.map((a) => a.requisito));
+  $('faltantes').replaceChildren(...(cvActual?.faltantes ?? []).filter((f) => !yaSumados.has(f)).map((f) => {
+    const chip = crear('button', `+ ${f}`, 'chip');
+    chip.type = 'button';
+    chip.setAttribute('aria-pressed', String(f === requisitoElegido));
+    chip.addEventListener('click', () => abrirFormulario(f));
+    const li = crear('li');
+    li.append(chip);
+    return li;
+  }));
+}
+
+function renderizarAgregados() {
+  $('agregados').replaceChildren(...agregados.map((a, i) => {
+    const li = crear('li', `${a.requisito} · ${a.lugar}`);
+    const quitar = crear('button', '×');
+    quitar.type = 'button';
+    quitar.setAttribute('aria-label', `Quitar ${a.requisito}`);
+    quitar.addEventListener('click', () => { agregados.splice(i, 1); renderizarAgregados(); renderizarFaltantes(); });
+    li.append(quitar);
+    return li;
+  }));
+  $('caja-agregados').hidden = agregados.length === 0;
+}
+
+function lugaresPosibles(cv) {
+  const etiqueta = (e) => [e.titulo, e.lugar].filter(Boolean).join(' — ');
+  return [...cv.experiencia, ...(cv.proyectos ?? []), ...cv.educacion].map(etiqueta).filter(Boolean)
+    .concat('Proyecto personal o curso');
+}
+
+function abrirFormulario(requisito) {
+  requisitoElegido = requisito;
+  $('agregar-requisito').textContent = requisito;
+  $('agregar-lugar').replaceChildren(...lugaresPosibles(cvActual).map((l) => {
+    const op = crear('option', l);
+    op.value = l;
+    return op;
+  }));
+  $('agregar-detalle').value = '';
+  $('form-agregar').hidden = false;
+  renderizarFaltantes();
+  $('agregar-lugar').focus();
+}
+
+function cerrarFormulario() {
+  requisitoElegido = '';
+  $('form-agregar').hidden = true;
+  renderizarFaltantes();
+}
+
 function renderizarAnalisis(cv, avisos) {
   $('coincidencias').replaceChildren(...cv.coincidencias.map((c) => crear('li', c)));
-  $('faltantes').replaceChildren(...cv.faltantes.map((c) => crear('li', c)));
+  renderizarFaltantes();
   $('lista-avisos').replaceChildren(...avisos.map((a) => crear('li', a)));
   $('avisos').hidden = avisos.length === 0;
 }
@@ -74,17 +129,30 @@ async function alCargarArchivo(archivo) {
 }
 
 async function alOptimizar() {
+  agregados = [];
+  cerrarFormulario();
+  renderizarAgregados();
+  await generar('Analizando el CV y la oferta…');
+}
+
+async function alActualizar() {
+  cerrarFormulario();
+  await generar('Actualizando tu CV con lo que sumaste…');
+}
+
+async function generar(mensaje) {
   const boton = $('boton-optimizar');
   const modo = document.querySelector('input[name="modo"]:checked').value;
   const idioma = document.querySelector('input[name="idioma"]:checked').value;
   const original = $('texto-cv').value;
   boton.disabled = true;
-  estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : 'Analizando el CV y la oferta…');
+  $('boton-actualizar').disabled = true;
+  estado(modo === 'local' ? 'Procesando con Ollama (puede tardar)…' : mensaje);
   try {
-    cvActual = { ...(await optimizar(original, $('oferta').value, { modo, idioma })), idioma };
+    cvActual = { ...(await optimizar(original, $('oferta').value, { modo, idioma, agregados })), idioma };
     latexActual = cvALatex(cvActual);
     renderizarVista(cvActual);
-    renderizarAnalisis(cvActual, verificarCv(cvActual, original));
+    renderizarAnalisis(cvActual, verificarCv(cvActual, original + textoAgregados(agregados)));
     $('vista-latex').textContent = latexActual;
     $('snip-overleaf').value = latexActual;
     $('acciones').hidden = false;
@@ -93,6 +161,7 @@ async function alOptimizar() {
     estado(e.message, true);
   } finally {
     boton.disabled = false;
+    $('boton-actualizar').disabled = false;
   }
 }
 
@@ -108,6 +177,15 @@ zona.addEventListener('dragover', (e) => { e.preventDefault(); zona.classList.ad
 zona.addEventListener('dragleave', () => zona.classList.remove('activa'));
 zona.addEventListener('drop', (e) => { e.preventDefault(); zona.classList.remove('activa'); alCargarArchivo(e.dataTransfer.files[0]); });
 $('boton-optimizar').addEventListener('click', alOptimizar);
+$('boton-actualizar').addEventListener('click', alActualizar);
+$('agregar-cancelar').addEventListener('click', cerrarFormulario);
+$('form-agregar').addEventListener('submit', (e) => {
+  e.preventDefault();
+  agregados.push({ requisito: requisitoElegido, lugar: $('agregar-lugar').value, detalle: $('agregar-detalle').value.trim() });
+  cerrarFormulario();
+  renderizarAgregados();
+  estado('Sumado. Cuando termines, tocá "Actualizar CV".');
+});
 for (const b of document.querySelectorAll('[data-vista]')) b.addEventListener('click', () => cambiarVista(b.dataset.vista));
 $('bajar-tex').addEventListener('click', () => descargar(latexActual, nombreArchivo(cvActual, 'tex'), 'application/x-tex'));
 $('bajar-pdf').addEventListener('click', () => window.pdfMake.createPdf(cvADocumento(cvActual)).download(nombreArchivo(cvActual, 'pdf')));

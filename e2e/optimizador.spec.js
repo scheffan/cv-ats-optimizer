@@ -28,7 +28,7 @@ test('flujo completo: optimiza, muestra la vista previa y el LaTeX', async ({ pa
   await page.getByTestId('optimizar').click();
   const cuerpo = (await pedido).postDataJSON();
   expect(cuerpo.cv).toContain('Tienda Nube');
-  expect(Object.keys(cuerpo).sort()).toEqual(['cv', 'idioma', 'oferta']); // solo viaja el texto, nada más
+  expect(Object.keys(cuerpo).sort()).toEqual(['agregados', 'cv', 'idioma', 'oferta']); // solo viaja el texto, nada más
 
   await expect(page.getByTestId('vista-previa')).toContainText('Juan Gómez');
   await expect(page.getByTestId('coincidencias')).toContainText('Playwright');
@@ -104,4 +104,41 @@ test('genera el CV en inglés si se elige English', async ({ page }) => {
   await expect(page.getByTestId('vista-previa')).toContainText('Experience');
   await page.getByRole('tab', { name: 'LaTeX' }).click();
   await expect(page.getByTestId('vista-latex')).toContainText('\\section*{Skills}');
+});
+
+test('permite sumar algo que faltaba y actualizar el CV', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await expect(page.getByTestId('faltantes')).toContainText('Docker');
+
+  await page.getByRole('button', { name: '+ Docker' }).click();
+  await expect(page.getByTestId('form-agregar')).toBeVisible();
+  await page.getByTestId('agregar-lugar').selectOption('Analista QA — Tienda Nube');
+  await page.getByTestId('agregar-detalle').fill('levanté entornos de prueba');
+  await page.getByTestId('agregar-confirmar').click();
+
+  await expect(page.getByTestId('agregados')).toContainText('Docker · Analista QA — Tienda Nube');
+  await expect(page.getByTestId('faltantes')).not.toContainText('Docker');
+
+  await page.unroute(API);
+  const actualizado = { ...CV_IA, habilidades: [...CV_IA.habilidades, 'Docker'], faltantes: ['TypeScript', 'GitHub Actions'] };
+  await simularApi(page, { cv: actualizado });
+  const pedido = page.waitForRequest(API);
+  await page.getByTestId('actualizar').click();
+  const cuerpo = (await pedido).postDataJSON();
+  expect(cuerpo.agregados).toEqual([{ requisito: 'Docker', lugar: 'Analista QA — Tienda Nube', detalle: 'levanté entornos de prueba' }]);
+  await expect(page.getByTestId('vista-previa')).toContainText('Docker');
+  await expect(page.getByTestId('avisos')).toBeHidden();
+});
+
+test('quitar un dato sumado lo devuelve a la lista de faltantes', async ({ page }) => {
+  await simularApi(page, { cv: CV_IA });
+  await completar(page);
+  await page.getByTestId('optimizar').click();
+  await page.getByRole('button', { name: '+ TypeScript' }).click();
+  await page.getByTestId('agregar-confirmar').click();
+  await page.getByRole('button', { name: 'Quitar TypeScript' }).click();
+  await expect(page.getByTestId('faltantes')).toContainText('TypeScript');
+  await expect(page.getByTestId('actualizar')).toBeHidden();
 });

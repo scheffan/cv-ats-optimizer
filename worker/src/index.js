@@ -77,7 +77,7 @@ export default {
     const entrada = validarEntrada(datos);
     if (entrada.error) return responder({ error: entrada.error }, 400, cors);
 
-    const mensajes = armarMensajes(entrada.cv, entrada.oferta, entrada.idioma);
+    const mensajes = armarMensajes(entrada.cv, entrada.oferta, entrada.idioma, entrada.agregados);
     let ultimoEstado = 0;
     let cuotaAgotada = false;
     for (const modelo of listaModelos(env)) {

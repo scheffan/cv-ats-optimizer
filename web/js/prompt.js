@@ -4,12 +4,13 @@ import { IDIOMAS } from './idiomas.js';
 
 export const LIMITE_CV = 15000;
 export const LIMITE_OFERTA = 8000;
+export const MAX_AGREGADOS = 15;
 
 export const INSTRUCCIONES = `Sos un especialista en selección de personal y en sistemas ATS.
 Vas a recibir el CV de una persona y una oferta laboral. Tu trabajo es reescribir el CV para esa oferta.
 
 Reglas que no se negocian:
-1. No inventes nada. Cada empresa, puesto, fecha, título, herramienta, número y logro tiene que estar en el CV original. Si la oferta pide algo que el CV no tiene, NO lo agregues: anotalo en "faltantes".
+1. No inventes nada. Cada empresa, puesto, fecha, título, herramienta, número y logro tiene que estar en el CV original o en los DATOS AGREGADOS POR LA PERSONA (si los hay). Si la oferta pide algo que el CV no tiene, NO lo agregues: anotalo en "faltantes".
 2. Mantené el tono de la persona: misma persona gramatical, mismo registro (formal o informal) y el mismo estilo de verbos. Reordená y ajustá, pero que suene a quien lo escribió, no a una plantilla.
 3. No copies frases de la oferta. Solo podés usar sus palabras clave cuando describen algo que el CV ya demuestra.
 4. Priorizá lo que coincide con la oferta: ponelo primero, con verbos de acción y resultados concretos si el original los tiene.
@@ -31,12 +32,19 @@ Respondé SOLO con un objeto JSON con esta forma:
   "faltantes": ["requisitos de la oferta que el CV no menciona"]
 }`;
 
-export function armarMensajes(cv, oferta, idioma = 'es') {
+// Lo que la persona confirma que tiene y se olvidó de poner en el CV.
+export function textoAgregados(agregados = []) {
+  if (!agregados.length) return '';
+  const lineas = agregados.map((a) => `- ${a.requisito}: lo usó en "${a.lugar}"${a.detalle ? `. Detalle: ${a.detalle}` : ''}`);
+  return `\n\nDATOS AGREGADOS POR LA PERSONA (son reales, los confirmó ella; integralos en la experiencia o el proyecto indicado, con su tono, y no los pongas en faltantes):\n${lineas.join('\n')}`;
+}
+
+export function armarMensajes(cv, oferta, idioma = 'es', agregados = []) {
   const nombre = (IDIOMAS[idioma] ?? IDIOMAS.es).nombre;
   const pedidoIdioma = `\n\nIdioma: escribí todo el CV en ${nombre}. Si el original está en otro idioma, traducilo con fidelidad, sin agregar ni quitar datos y manteniendo el tono. Los nombres de empresas, instituciones y herramientas no se traducen.`;
   return [
     { role: 'system', content: INSTRUCCIONES + pedidoIdioma },
-    { role: 'user', content: `CV ORIGINAL:\n"""\n${cv}\n"""\n\nOFERTA LABORAL:\n"""\n${oferta}\n"""` },
+    { role: 'user', content: `CV ORIGINAL:\n"""\n${cv}\n"""\n\nOFERTA LABORAL:\n"""\n${oferta}\n"""${textoAgregados(agregados)}` },
   ];
 }
 
@@ -48,7 +56,20 @@ export function validarEntrada(datos) {
   if (cv.length > LIMITE_CV) return { error: `El CV supera los ${LIMITE_CV} caracteres.` };
   if (oferta.length > LIMITE_OFERTA) return { error: `La oferta supera los ${LIMITE_OFERTA} caracteres.` };
   const idioma = datos?.idioma in IDIOMAS ? datos.idioma : 'es';
-  return { cv, oferta, idioma };
+  const agregados = validarAgregados(datos?.agregados);
+  if (agregados.error) return agregados;
+  return { cv, oferta, idioma, agregados };
+}
+
+const recortar = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+
+export function validarAgregados(lista) {
+  if (lista === undefined) return [];
+  if (!Array.isArray(lista)) return { error: 'Los datos agregados no son válidos.' };
+  if (lista.length > MAX_AGREGADOS) return { error: `Podés agregar hasta ${MAX_AGREGADOS} datos.` };
+  return lista
+    .map((a) => ({ requisito: recortar(a?.requisito, 80), lugar: recortar(a?.lugar, 150), detalle: recortar(a?.detalle, 300) }))
+    .filter((a) => a.requisito && a.lugar);
 }
 
 const LISTAS = ['contacto', 'experiencia', 'educacion', 'proyectos', 'habilidades', 'otros', 'coincidencias', 'faltantes'];

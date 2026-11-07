@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armarMensajes, validarEntrada, normalizarCv, INSTRUCCIONES, LIMITE_CV } from '../web/js/prompt.js';
+import { armarMensajes, validarEntrada, validarAgregados, normalizarCv, INSTRUCCIONES, LIMITE_CV } from '../web/js/prompt.js';
 import { CV_ORIGINAL, OFERTA, CV_IA } from './datos.js';
 
 test('las instrucciones prohíben inventar y piden mantener el tono', () => {
@@ -20,7 +20,7 @@ test('rechaza CV vacío, oferta corta y textos gigantes', () => {
   assert.ok(validarEntrada({ cv: CV_ORIGINAL, oferta: 'corta' }).error);
   assert.ok(validarEntrada({ cv: 'x'.repeat(LIMITE_CV + 1), oferta: OFERTA }).error);
   assert.ok(validarEntrada({ cv: 123, oferta: OFERTA }).error);
-  assert.deepEqual(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA }), { cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'es' });
+  assert.deepEqual(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA }), { cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'es', agregados: [] });
 });
 
 test('normaliza respuestas con campos faltantes o de otro tipo', () => {
@@ -46,4 +46,22 @@ test('pide el CV en el idioma elegido y no acepta idiomas desconocidos', () => {
   assert.match(armarMensajes(CV_ORIGINAL, OFERTA)[0].content, /todo el CV en español/);
   assert.equal(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'fr' }).idioma, 'es');
   assert.equal(validarEntrada({ cv: CV_ORIGINAL, oferta: OFERTA, idioma: 'en' }).idioma, 'en');
+});
+
+test('suma al pedido lo que la persona confirmó que tiene', () => {
+  const agregados = [{ requisito: 'Docker', lugar: 'Analista QA — Tienda Nube', detalle: 'levanté entornos de prueba' }];
+  const [sistema, usuario] = armarMensajes(CV_ORIGINAL, OFERTA, 'es', agregados);
+  assert.match(sistema.content, /DATOS AGREGADOS POR LA PERSONA/);
+  assert.match(usuario.content, /- Docker: lo usó en "Analista QA — Tienda Nube". Detalle: levanté entornos de prueba/);
+  assert.doesNotMatch(armarMensajes(CV_ORIGINAL, OFERTA)[1].content, /DATOS AGREGADOS/);
+});
+
+test('valida y recorta los datos agregados', () => {
+  assert.deepEqual(validarAgregados(undefined), []);
+  assert.ok(validarAgregados('no').error);
+  assert.ok(validarAgregados(Array(16).fill({ requisito: 'a', lugar: 'b' })).error);
+  const [a] = validarAgregados([{ requisito: 'x'.repeat(200), lugar: 'Acme', detalle: 5 }, { requisito: 'sin lugar' }]);
+  assert.equal(a.requisito.length, 80);
+  assert.equal(a.detalle, '');
+  assert.equal(validarAgregados([{ requisito: 'sin lugar' }]).length, 0);
 });
