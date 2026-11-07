@@ -96,7 +96,7 @@ Una sola vez hay que:
 1. En **Settings > Pages**, elegir *GitHub Actions* como fuente.
 2. Crear una clave gratis en [Groq](https://console.groq.com/keys) y un token de [Cloudflare](https://dash.cloudflare.com/profile/api-tokens) con la plantilla *Edit Cloudflare Workers*.
 3. Cargarlos en **Settings > Secrets and variables > Actions** como `GROQ_API_KEY` y `CLOUDFLARE_API_TOKEN`.
-4. Crear también `CODIGO_ACCESO` con una contraseña larga: con ella (botón "Tengo un código") usás la web sin límite diario. El contador de usos (Cloudflare KV) lo crea el workflow solo.
+4. Crear también `CODIGO_ACCESO_CV` con una contraseña larga: con ella (botón "Tengo un código") usás la web sin límite diario. El contador de usos (Cloudflare KV) lo crea el workflow solo.
 
 ## Licencia
 

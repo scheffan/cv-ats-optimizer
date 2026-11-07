@@ -21,12 +21,12 @@ jobs:
     outputs:
       url: ${{ steps.deploy.outputs.deployment-url }}
     env:
-      TIENE_CLAVES: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.GROQ_API_KEY != '' && secrets.CODIGO_ACCESO != '' }}
+      TIENE_CLAVES: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.GROQ_API_KEY != '' && secrets.CODIGO_ACCESO_CV != '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Avisar si faltan los secretos
         if: env.TIENE_CLAVES != 'true'
-        run: echo "::warning::Faltan los secretos CLOUDFLARE_API_TOKEN, GROQ_API_KEY o CODIGO_ACCESO. La web se publica igual, pero la IA online no va a responder."
+        run: echo "::warning::Faltan los secretos CLOUDFLARE_API_TOKEN, GROQ_API_KEY o CODIGO_ACCESO_CV. La web se publica igual, pero la IA online no va a responder."
       - name: Registrar el subdominio workers.dev (solo la primera vez)
         if: env.TIENE_CLAVES == 'true'
         env:
@@ -70,7 +70,7 @@ jobs:
             CODIGO_ACCESO
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          CODIGO_ACCESO: ${{ secrets.CODIGO_ACCESO }}
+          CODIGO_ACCESO: ${{ secrets.CODIGO_ACCESO_CV }}
 
   web:
     name: Web (GitHub Pages)
