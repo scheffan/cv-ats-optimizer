@@ -18,6 +18,12 @@ test('arma el documento con nombre y secciones', () => {
   assert.match(tex, /Playwright, SQL/);
 });
 
+test('incluye la sección de proyectos', () => {
+  const tex = cvALatex({ nombre: 'X', proyectos: [{ titulo: 'Bot de Python', lugar: 'GitHub', fechas: '2025', logros: ['Automaticé reportes'] }] });
+  assert.match(tex, /\\section\*\{Proyectos\}/);
+  assert.match(tex, /Bot de Python --- GitHub/);
+});
+
 test('omite secciones vacías', () => {
   const tex = cvALatex({ nombre: 'X' });
   assert.doesNotMatch(tex, /section/);

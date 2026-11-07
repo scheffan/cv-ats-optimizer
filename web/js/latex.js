@@ -28,7 +28,7 @@ function entrada({ titulo, lugar, fechas, logros }) {
 }
 
 export function cvALatex(cv) {
-  const { nombre = '', contacto = [], resumen = '', experiencia = [], educacion = [],
+  const { nombre = '', contacto = [], resumen = '', experiencia = [], educacion = [], proyectos = [],
     habilidades = [], otros = [] } = cv;
   return `\\documentclass[11pt]{article}
 \\usepackage[utf8]{inputenc}
@@ -44,6 +44,6 @@ export function cvALatex(cv) {
 {\\LARGE\\textbf{${escapar(nombre)}}}\\\\
 ${contacto.filter(Boolean).map(escapar).join(' | ')}
 
-${seccion('Perfil', resumen ? escapar(resumen) : '')}${seccion('Experiencia', experiencia.map(entrada).join('\n'))}${seccion('Educación', educacion.map(entrada).join('\n'))}${seccion('Habilidades', habilidades.filter(Boolean).map(escapar).join(', '))}${seccion('Otros', vinetas(otros))}\\end{document}
+${seccion('Perfil', resumen ? escapar(resumen) : '')}${seccion('Experiencia', experiencia.map(entrada).join('\n'))}${seccion('Educación', educacion.map(entrada).join('\n'))}${seccion('Proyectos', proyectos.map(entrada).join('\n'))}${seccion('Habilidades', habilidades.filter(Boolean).map(escapar).join(', '))}${seccion('Otros', vinetas(otros))}\\end{document}
 `;
 }

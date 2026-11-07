@@ -31,7 +31,7 @@ function renderizarVista(cv) {
   hoja.replaceChildren(crear('p', cv.nombre, 'nombre'), crear('p', cv.contacto.join(' | '), 'contacto'));
   const seccion = (titulo) => hoja.append(crear('h3', titulo));
   if (cv.resumen) { seccion('Perfil'); hoja.append(crear('p', cv.resumen)); }
-  for (const [titulo, items] of [['Experiencia', cv.experiencia], ['Educación', cv.educacion]]) {
+  for (const [titulo, items] of [['Experiencia', cv.experiencia], ['Educación', cv.educacion], ['Proyectos', cv.proyectos ?? []]]) {
     if (!items.length) continue;
     seccion(titulo);
     for (const e of items) {

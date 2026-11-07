@@ -25,7 +25,7 @@ export function verificarCv(cv, textoOriginal) {
   const numerosOriginales = new Set(numerosDe(textoOriginal));
   const avisos = [];
 
-  for (const [seccion, items] of [['Experiencia', cv.experiencia], ['Educación', cv.educacion]]) {
+  for (const [seccion, items] of [['Experiencia', cv.experiencia], ['Educación', cv.educacion], ['Proyectos', cv.proyectos]]) {
     for (const item of items ?? []) {
       if (item.lugar && !aparece(item.lugar, original)) avisos.push(`${seccion}: "${item.lugar}" no figura en tu CV original.`);
       for (const n of numerosDe(item.fechas)) {

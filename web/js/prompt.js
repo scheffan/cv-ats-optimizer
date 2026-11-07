@@ -13,6 +13,7 @@ Reglas que no se negocian:
 4. Priorizá lo que coincide con la oferta: ponelo primero, con verbos de acción y resultados concretos si el original los tiene.
 5. Una sola columna, sin tablas, sin íconos y sin emojis. Texto plano que un ATS pueda leer.
 6. Las fechas se copian tal cual aparecen en el original.
+7. No descartes secciones: proyectos, cursos, idiomas y certificaciones del original tienen que aparecer en el resultado.
 
 Respondé SOLO con un objeto JSON con esta forma:
 {
@@ -21,9 +22,10 @@ Respondé SOLO con un objeto JSON con esta forma:
   "resumen": "2 a 4 oraciones",
   "experiencia": [{"titulo": "puesto", "lugar": "empresa", "fechas": "tal cual el original", "logros": ["..."]}],
   "educacion": [{"titulo": "carrera o curso", "lugar": "institución", "fechas": "...", "logros": []}],
+  "proyectos": [{"titulo": "nombre del proyecto", "lugar": "enlace o contexto si lo hay", "fechas": "...", "logros": ["qué hiciste y con qué"]}],
   "habilidades": ["..."],
-  "otros": ["idiomas, certificaciones, proyectos u otros datos del original"],
-  "coincidencias": ["palabras clave de la oferta que el CV sí demuestra"],
+  "otros": ["idiomas, certificaciones, cursos u otros datos del original"],
+  "coincidencias": ["requisitos de la oferta que el CV menciona de forma explícita"],
   "faltantes": ["requisitos de la oferta que el CV no menciona"]
 }`;
 
@@ -44,14 +46,14 @@ export function validarEntrada(datos) {
   return { cv, oferta };
 }
 
-const LISTAS = ['contacto', 'experiencia', 'educacion', 'habilidades', 'otros', 'coincidencias', 'faltantes'];
+const LISTAS = ['contacto', 'experiencia', 'educacion', 'proyectos', 'habilidades', 'otros', 'coincidencias', 'faltantes'];
 
 // Normaliza lo que devuelve el modelo para que el front no reciba sorpresas.
 export function normalizarCv(crudo) {
   const cv = typeof crudo === 'object' && crudo ? crudo : {};
   const salida = { nombre: String(cv.nombre ?? '').trim(), resumen: String(cv.resumen ?? '').trim() };
   for (const clave of LISTAS) salida[clave] = Array.isArray(cv[clave]) ? cv[clave] : [];
-  for (const clave of ['experiencia', 'educacion']) {
+  for (const clave of ['experiencia', 'educacion', 'proyectos']) {
     salida[clave] = salida[clave]
       .filter((e) => e && typeof e === 'object')
       .map((e) => ({

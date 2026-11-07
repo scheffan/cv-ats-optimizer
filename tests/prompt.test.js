@@ -30,6 +30,12 @@ test('normaliza respuestas con campos faltantes o de otro tipo', () => {
   assert.deepEqual(cv.faltantes, []);
 });
 
+test('conserva los proyectos y pide no descartar secciones', () => {
+  assert.match(INSTRUCCIONES, /No descartes secciones/);
+  const cv = normalizarCv({ nombre: 'Ana', proyectos: [{ titulo: 'Web', logros: ['Hecha con HTML'] }] });
+  assert.equal(cv.proyectos[0].titulo, 'Web');
+});
+
 test('falla si la respuesta no tiene ni nombre ni experiencia', () => {
   assert.throws(() => normalizarCv({}));
   assert.equal(normalizarCv(CV_IA).nombre, 'Juan Gómez');

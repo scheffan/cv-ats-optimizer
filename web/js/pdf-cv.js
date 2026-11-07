@@ -28,6 +28,7 @@ export function cvADocumento(cv) {
   if (cv.resumen) contenido.push(...encabezadoSeccion('Perfil'), { text: cv.resumen, margin: [0, 0, 0, 6] });
   if (cv.experiencia?.length) contenido.push(...encabezadoSeccion('Experiencia'), ...cv.experiencia.flatMap(entrada));
   if (cv.educacion?.length) contenido.push(...encabezadoSeccion('Educación'), ...cv.educacion.flatMap(entrada));
+  if (cv.proyectos?.length) contenido.push(...encabezadoSeccion('Proyectos'), ...cv.proyectos.flatMap(entrada));
   if (cv.habilidades?.length) contenido.push(...encabezadoSeccion('Habilidades'), { text: cv.habilidades.join(', '), margin: [0, 0, 0, 6] });
   if (cv.otros?.length) contenido.push(...encabezadoSeccion('Otros'), { ul: cv.otros });
 
