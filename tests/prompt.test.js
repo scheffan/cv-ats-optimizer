@@ -71,3 +71,9 @@ test('descarta un detalle tecleado al azar y pide no inventar contexto', () => {
   assert.equal(a.detalle, '');
   assert.match(textoAgregados([a]), /no inventes tareas, contextos/);
 });
+
+test('las instrucciones piden poner primero lo que coincide con la oferta', () => {
+  assert.match(INSTRUCCIONES, /los logros que coinciden con la oferta van primero/);
+  assert.match(INSTRUCCIONES, /En "habilidades", primero las que pide la oferta/);
+  assert.match(INSTRUCCIONES, /orden cronológico/);
+});
