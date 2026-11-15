@@ -77,3 +77,10 @@ test('las instrucciones piden poner primero lo que coincide con la oferta', () =
   assert.match(INSTRUCCIONES, /En "habilidades", primero las que pide la oferta/);
   assert.match(INSTRUCCIONES, /orden cronológico/);
 });
+
+test('las instrucciones cuidan la voz: tiempos verbales, frases personales y números exactos', () => {
+  assert.match(INSTRUCCIONES, /mismos tiempos verbales/);
+  assert.match(INSTRUCCIONES, /Conservá las frases personales/);
+  assert.match(INSTRUCCIONES, /números exactos/);
+  assert.match(INSTRUCCIONES, /No lo reescribas desde cero/);
+});
