@@ -83,6 +83,7 @@ test('las instrucciones fijan el primer logro, protegen el resumen y piden una r
   assert.match(INSTRUCCIONES, /Usá solo las oraciones del resumen original/);
   assert.match(INSTRUCCIONES, /no le sumes logros de la experiencia/);
   assert.match(INSTRUCCIONES, /Antes de responder, revisá tu resultado/);
+  assert.match(INSTRUCCIONES, /Ordenalas por cuánto se acercan a los requisitos principales/);
 });
 
 test('las instrucciones cuidan la voz: tiempos verbales, frases personales y números exactos', () => {

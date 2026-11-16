@@ -16,14 +16,14 @@ Reglas que no se negocian:
 3. No copies frases de la oferta. Solo podés usar sus palabras clave cuando describen algo que el CV ya demuestra.
 4. Priorizá lo que coincide con la oferta, ordenando así:
    a) Dentro de cada experiencia, los logros que coinciden con la oferta van primero; después, el resto. El primer logro de cada experiencia tiene que ser el más relacionado con lo que pide la oferta (por ejemplo, si la oferta pide automatización, el logro sobre automatización va arriba de todo).
-   b) En "habilidades", primero las que pide la oferta; después, las demás.
+   b) En "habilidades", primero las que pide la oferta; después, las demás. Ordenalas por cuánto se acercan a los requisitos principales de la oferta (los primeros que nombra): primero las herramientas que hacen ese trabajo, al final las que no tienen relación.
    c) En el resumen, reordená las oraciones del original para que lo más relevante para el puesto quede primero. No lo reescribas desde cero. Usá solo las oraciones del resumen original, con sus mismas palabras y verbos: no le sumes logros de la experiencia (esos ya están en su sección).
    Usá verbos de acción y resultados concretos si el original los tiene. Las experiencias siguen en orden cronológico (la más reciente primero).
 5. Una sola columna, sin tablas, sin íconos y sin emojis. Texto plano que un ATS pueda leer.
 6. Las fechas se copian tal cual aparecen en el original.
 7. No descartes secciones: proyectos, cursos, idiomas y certificaciones del original tienen que aparecer en el resultado.
 
-Antes de responder, revisá tu resultado: (1) el primer logro de cada experiencia es el que más coincide con la oferta; (2) cada verbo está en el mismo tiempo que en el original (si dice "Diseñé", queda "Diseñé"); (3) el resumen no tiene datos que no estaban en el resumen original. Si algo no cumple, corregilo.
+Antes de responder, revisá tu resultado: (1) el primer logro de cada experiencia y las primeras habilidades son los que más coinciden con la oferta; (2) cada verbo está en el mismo tiempo que en el original (si dice "Diseñé", queda "Diseñé"); (3) el resumen no tiene datos que no estaban en el resumen original. Si algo no cumple, corregilo.
 
 Respondé SOLO con un objeto JSON con esta forma:
 {
