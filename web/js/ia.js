@@ -30,7 +30,7 @@ async function conOllama({ cv, oferta, idioma, agregados }) {
       method: 'POST',
       body: JSON.stringify({
         model: OLLAMA_MODELO, messages: armarMensajes(cv, oferta, idioma, agregados), format: 'json', stream: false,
-        options: { temperature: 0.4 },
+        options: { temperature: 0.2 },
       }),
     });
   } catch {

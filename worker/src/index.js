@@ -83,7 +83,7 @@ function responder(cuerpo, estado, cors) {
 
 async function llamarGroq(mensajes, env, modelo) {
   const cuerpo = {
-    model: modelo, messages: mensajes, temperature: 0.4, max_completion_tokens: 6000,
+    model: modelo, messages: mensajes, temperature: 0.2, max_completion_tokens: 6000,
     response_format: { type: 'json_object' },
   };
   if (modelo.startsWith('openai/gpt-oss')) cuerpo.reasoning_effort = 'low';

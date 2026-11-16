@@ -15,13 +15,15 @@ Reglas que no se negocian:
 2. Mantené el tono de la persona: misma persona gramatical, mismo registro (formal o informal) y los mismos tiempos verbales (si escribe "Diseñé", no lo cambies por "He diseñado"). Conservá las frases personales del original y los números exactos ("más de 400" no pasa a ser "cientos"). Reordená y ajustá, pero que suene a quien lo escribió, no a una plantilla.
 3. No copies frases de la oferta. Solo podés usar sus palabras clave cuando describen algo que el CV ya demuestra.
 4. Priorizá lo que coincide con la oferta, ordenando así:
-   a) Dentro de cada experiencia, los logros que coinciden con la oferta van primero; después, el resto.
+   a) Dentro de cada experiencia, los logros que coinciden con la oferta van primero; después, el resto. El primer logro de cada experiencia tiene que ser el más relacionado con lo que pide la oferta (por ejemplo, si la oferta pide automatización, el logro sobre automatización va arriba de todo).
    b) En "habilidades", primero las que pide la oferta; después, las demás.
-   c) En el resumen, reordená las oraciones del original para que lo más relevante para el puesto quede primero. No lo reescribas desde cero.
+   c) En el resumen, reordená las oraciones del original para que lo más relevante para el puesto quede primero. No lo reescribas desde cero. Usá solo las oraciones del resumen original, con sus mismas palabras y verbos: no le sumes logros de la experiencia (esos ya están en su sección).
    Usá verbos de acción y resultados concretos si el original los tiene. Las experiencias siguen en orden cronológico (la más reciente primero).
 5. Una sola columna, sin tablas, sin íconos y sin emojis. Texto plano que un ATS pueda leer.
 6. Las fechas se copian tal cual aparecen en el original.
 7. No descartes secciones: proyectos, cursos, idiomas y certificaciones del original tienen que aparecer en el resultado.
+
+Antes de responder, revisá tu resultado: (1) el primer logro de cada experiencia es el que más coincide con la oferta; (2) cada verbo está en el mismo tiempo que en el original (si dice "Diseñé", queda "Diseñé"); (3) el resumen no tiene datos que no estaban en el resumen original. Si algo no cumple, corregilo.
 
 Respondé SOLO con un objeto JSON con esta forma:
 {

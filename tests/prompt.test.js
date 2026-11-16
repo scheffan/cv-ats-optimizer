@@ -78,6 +78,13 @@ test('las instrucciones piden poner primero lo que coincide con la oferta', () =
   assert.match(INSTRUCCIONES, /orden cronológico/);
 });
 
+test('las instrucciones fijan el primer logro, protegen el resumen y piden una revisión final', () => {
+  assert.match(INSTRUCCIONES, /El primer logro de cada experiencia tiene que ser el más relacionado/);
+  assert.match(INSTRUCCIONES, /Usá solo las oraciones del resumen original/);
+  assert.match(INSTRUCCIONES, /no le sumes logros de la experiencia/);
+  assert.match(INSTRUCCIONES, /Antes de responder, revisá tu resultado/);
+});
+
 test('las instrucciones cuidan la voz: tiempos verbales, frases personales y números exactos', () => {
   assert.match(INSTRUCCIONES, /mismos tiempos verbales/);
   assert.match(INSTRUCCIONES, /Conservá las frases personales/);
